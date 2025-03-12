@@ -1,4 +1,4 @@
-import { _getLayers, findIntersections, Rectangle } from "./ilst.pure";
+import { findIntersections, Rectangle } from "./rectangle";
 
 const rectangles: Rectangle[] = [
   { x: 0, y: 0, width: 49, height: 49 },
@@ -49,10 +49,10 @@ const data: Record<string, Rectangle> = {
   },
 };
 
-describe("list.tests.ts", () => {
+describe("rectangle", () => {
   describe("findIntersections", () => {
     rectangles.forEach((element, idx) => {
-      test("find rectangle " + idx, () => {
+      test("find rectangle itself " + idx, () => {
         expect(findIntersections(element, rectangles)).toEqual(idx);
       });
     });
@@ -82,19 +82,6 @@ describe("list.tests.ts", () => {
           ]
         )
       ).toEqual(0);
-    });
-  });
-  describe("getLayers", () => {
-    test("empty layers", () => {
-      expect(
-        _getLayers({
-          app: {
-            activeDocument: {
-              layers: [],
-            },
-          },
-        })()
-      ).toEqual([]);
     });
   });
 });

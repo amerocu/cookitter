@@ -16,7 +16,7 @@ const Main = () => {
   const [timerId, setTimerId] = useState<NodeJS.Timer | null>(null);
 
   const serialize = () => {
-    evalTS("appSerialize").then((res) => {
+    evalTS("serializeApp").then((res) => {
       console.log(typeof res, res);
     });
   };

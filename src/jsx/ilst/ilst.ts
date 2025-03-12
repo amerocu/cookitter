@@ -1,14 +1,8 @@
-import { _getLayers, findIntersections, Rectangle } from "./ilst.pure";
+import { _getLayers } from "./ilst.pure";
+import { findIntersections, Rectangle } from "./rectangle";
+import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
 
-export const getLayers = _getLayers({ app: app });
-
-function mapp(data: any, f: any) {
-  var tmp = [];
-  for (var i = 0; i < data.length; i++) {
-    tmp.push(f(data[i]));
-  }
-  return tmp;
-}
+export * from "./serialize";
 
 export const appReset = () => {
   if (app.documents.length === 0) return "No document open.";
@@ -111,90 +105,3 @@ function getByNameSafe(collection: any, name: string) {
   }
   return null;
 }
-
-function artboardRectangle(artboard: Artboard): Rectangle {
-  const artRect = artboard.artboardRect;
-  return {
-    x: artRect[0],
-    y: artRect[1],
-    width: Math.abs(artRect[0] - artRect[2]),
-    height: Math.abs(artRect[1] - artRect[3]),
-  };
-}
-
-function pathItemRectangle(pi: PathItem): Rectangle {
-  const pos = pi.position;
-  return {
-    x: pos[0],
-    y: pos[1],
-    width: pi.width,
-    height: pi.height,
-  };
-}
-
-export const appSerialize = () => {
-  const doc = app.activeDocument;
-
-  return {
-    layers: mapp(doc.layers, dumpLayer),
-    layersRect: mapp(doc.artboards, artboardRectangle),
-    artboards: mapp(doc.artboards, dumpArtboard),
-  };
-};
-
-function dumpLayer(layer: Layer) {
-  return {
-    name: layer.name,
-    visible: layer.visible,
-    pathItems: mapp(layer.pathItems, dumpPathItem),
-  };
-}
-
-function dumpPathItem(pi: PathItem) {
-  return {
-    name: pi.name,
-    note: pi.note,
-    lenght: pi.length,
-    position: pi.position,
-    width: pi.width,
-    height: pi.height,
-    top: pi.top,
-    locked: pi.locked,
-    selected: pi.selected,
-    stroked: pi.stroked,
-    stroke: {
-      // strokeColor: pi.strokeColor,
-      strokeDashes: pi.strokeDashes,
-      strokeDashOffset: pi.strokeDashOffset,
-      strokeJoin: pi.strokeJoin,
-      strokeMiterLimit: pi.strokeMiterLimit,
-      strokeOverprint: pi.strokeOverprint,
-      strokeWidth: pi.strokeWidth,
-    },
-    pathPoints: mapp(pi.pathPoints, dumpPathPoint),
-  };
-}
-
-function dumpPathPoint(pp: PathPoint) {
-  return {
-    anchor: pp.anchor,
-    leftDirection: pp.leftDirection,
-    pointType: pp.pointType,
-    rightDirection: pp.rightDirection,
-    typename: pp.typename,
-  };
-}
-
-function dumpArtboard(ab: Artboard) {
-  return {
-    name: ab.name,
-    artboardRect: ab.artboardRect,
-    rulerOrigin: ab.rulerOrigin,
-    rulerPAR: ab.rulerPAR,
-    typename: ab.typename,
-  };
-}
-
-export const helloWorld = () => {
-  alert("Hello from Illustrator");
-};
