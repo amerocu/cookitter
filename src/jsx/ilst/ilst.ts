@@ -1,3 +1,4 @@
+import { matchLayer, addInSet, getFromSet, mapp } from "./utils";
 import { findIntersections, Rectangle } from "./rectangle";
 import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
 
@@ -88,7 +89,7 @@ export const appRender = () => {
   log.push(`found layer ${dLayer.name}`);
   const dPathItems = dLayer.pathItems;
 
-  const syncItems = mkSyncItems(doc, dLayer);
+  const syncItems = mkSyncItems(log, doc, dLayer);
 
   // Items store for quick lookups
   var store: Store = {};
@@ -216,23 +217,48 @@ export const appRender = () => {
   return log;
 };
 
-function mkSyncItems(doc: Document, dLayer: Layer) {
+type PageNumber = string;
+type GroupNumber = string;
+type SideNumber = string;
+
+function mkSyncItems(log: any[], doc: Document, dLayer: Layer) {
   var artboards: Artboard[] = [];
   var artMap: Record<string, Artboard> = {};
   var artRectangle: Rectangle[] = [];
-  var artMapping: Record<string, string> = {
-    P1A: "P1B",
-    P1B: "P1A",
-    P2A: "P2B",
-    P2B: "P2A",
-  };
+  var artMapping: Record<
+    PageNumber,
+    Record<GroupNumber, Record<SideNumber, Artboard>>
+  > = {};
+  // {
+  //   "1": {
+  //     "1": {
+  //       side1: Layer:"ck-1-A",
+  //       side2: Layer:"ck-1-b",
+  //     },
+  //   },
+  //   "2": {
+  //     "1": {
+  //       side1: Layer:"ck-2-A",
+  //       side2: Layer:"ck-2-B",
+  //     },
+  //   },
+  // };
 
   for (var i = 0; i < doc.artboards.length; i++) {
     const artboard = doc.artboards[i];
-    if (artboard.name != "") {
+    const lIF = matchLayer(artboard.name);
+    if (lIF) {
       artMap[artboard.name] = artboard;
       artboards.push(artboard);
       artRectangle.push(artboardRectangle(artboard));
+      addInSet(
+        [lIF.page.toString(), lIF.group.toString(), lIF.side.toString()],
+        artboard,
+        artMapping
+      );
+      log.push(`added artboard:${artboard.name}`);
+    } else {
+      log.push(`ignoring artboard:${artboard.name}`);
     }
   }
 
@@ -279,15 +305,29 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
     const pathItemRect = pathItemRectangle(sPi);
     // the path item is missing
     log.push({ type: "searcing", shape: sPi.name, pathItemRect, artRectangle });
-    const sArtboardIdx = findIntersections(pathItemRect, artRectangle);
 
+    const sArtboardIdx = findIntersections(pathItemRect, artRectangle);
     log.push(`found ${sArtboardIdx}`);
 
     if (sArtboardIdx !== null) {
       const sArtboard = artboards[sArtboardIdx];
-      const dArtboardName = artMapping[sArtboard.name];
-      const dArtboard = artMap[dArtboardName];
 
+      const lIF = matchLayer(sArtboard.name);
+      if (!lIF) {
+        log.push({ type: "board name invalid", artboard: sArtboard.name });
+        return log;
+      }
+
+      const newSide = (lIF.side % 2) + 1;
+
+      const dArtboard = getFromSet(
+        [lIF.page.toString(), lIF.group.toString(), newSide.toString()],
+        artMapping
+      );
+      if (!dArtboard) {
+        log.push({ type: "board name without pair", artboard: sArtboard.name });
+        return log;
+      }
       log.push(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
       const dPi = sPi.duplicate(dLayer, ElementPlacement.INSIDE);
 
@@ -304,14 +344,6 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
 
     return log;
   };
-}
-
-function mapp(data: any, f: any) {
-  var tmp = [];
-  for (var i = 0; i < data.length; i++) {
-    tmp.push(f(data[i]));
-  }
-  return tmp;
 }
 
 function serializePathItem(pi: PathItem) {
@@ -372,6 +404,7 @@ function serializePathPoint(pp: PathPoint) {
   };
 }
 
+// FNV-1a Hash
 function hashString(str: string): string {
   var hash = 0x811c9dc5; // 32-bit FNV offset basis
   for (var i = 0; i < str.length; i++) {

@@ -1,10 +1,4 @@
-function mapp(data: any, f: any) {
-  var tmp = [];
-  for (var i = 0; i < data.length; i++) {
-    tmp.push(f(data[i]));
-  }
-  return tmp;
-}
+import { mapp } from "./utils";
 
 export const serializeApp = () => {
   const doc = app.activeDocument;

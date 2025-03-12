@@ -4,8 +4,6 @@
 
 ### Important
 
-- feat: make pages arrangement configurable
-
 ### Needed
 
 - feat: visual clue of which are the cloned elements and which are the original one
@@ -28,6 +26,7 @@
 - fix: the copy and the original element are in a group selection when the original one is selected
 - feat: use tags to put ids on elements and track their life?
 - feat: re-render only changed elements
+- feat: make pages arrangement configurable
 
 ## Known Bugs
 
