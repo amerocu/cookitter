@@ -44,7 +44,15 @@ function serializePathItem(pi: PathItem) {
       strokeOverprint: pi.strokeOverprint,
       strokeWidth: pi.strokeWidth,
     },
+    tags: mapp(pi.tags, serializeTag),
     pathPoints: mapp(pi.pathPoints, serializePathPoint),
+  };
+}
+
+function serializeTag(t: Tag) {
+  return {
+    name: t.name,
+    value: t.value,
   };
 }
 

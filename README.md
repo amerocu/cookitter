@@ -4,14 +4,13 @@
 
 ### Important
 
-- feat: re-render only changed elements
-- feat: re-render should render before deleting the old items
 - feat: make pages arrangement configurable
 
 ### Needed
 
 - feat: visual clue of which are the cloned elements and which are the original one
 - feat: show how much it took to render the elements
+- feat: if the user does an undo, pause the sync for 1 second.
 
 ### Useful
 
@@ -28,6 +27,7 @@
 - feat: lock the copied elements
 - fix: the copy and the original element are in a group selection when the original one is selected
 - feat: use tags to put ids on elements and track their life?
+- feat: re-render only changed elements
 
 ## Known Bugs
 

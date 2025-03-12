@@ -4,22 +4,38 @@ import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
 export * from "./serialize";
 
 export const appReset = () => {
+  var log: any[] = [];
   if (app.documents.length === 0) return "No document open.";
 
   var doc = app.activeDocument;
-  const layerName = "tagliato";
-  var targetLayer = doc.layers.getByName(layerName);
+  const sLayerName = "taglio";
+  var sLayer = doc.layers.getByName(sLayerName);
 
-  if (!targetLayer) return "Layer not found.";
-
-  // Delete all objects in the layer
-  while (targetLayer.pageItems.length > 0) {
-    targetLayer.pageItems[0].remove();
+  if (sLayer) {
+    const sPathItems = sLayer.pathItems;
+    for (var i = 0; i < sPathItems.length; i++) {
+      log.push(`deleting tags ${sPathItems[i].name}`);
+      // NOTE this does not work!!
+      // sPathItems[i].tags.removeAll();
+      const tags = sPathItems[i].tags;
+      while (tags.length > 0) {
+        tags[0].remove();
+      }
+    }
   }
 
-  // TODO delete tags
+  const dLayerName = "tagliato";
+  var dLayer = doc.layers.getByName(dLayerName);
 
-  return "Deleted all elements in " + layerName;
+  if (dLayer) {
+    // Delete all items in the layer
+    while (dLayer.pageItems.length > 0) {
+      dLayer.pageItems[0].remove();
+    }
+  }
+
+  log.push(`Deleted all elements in ${dLayerName}`);
+  return log;
 };
 
 function generateID(store: Record<string, any>) {
@@ -45,25 +61,24 @@ type Store = Record<string, ElementStore>;
 
 // Serialize Store functions
 function ss(store: Store) {
-  var s = {};
+  var s: Record<string, { source: string; destination: null | string }> = {};
 
   for (const key in store) {
     const val = store[key];
     s[key] = {
       source: val.source?.name,
-      destination: val.destination?.name,
+      destination: val.destination?.name ?? null,
     };
   }
   return s;
 }
 
-const cookitterTagName = "cookitter";
+const cookitterTagNameId = "cookitter_id";
+const cookitterTagNameSignature = "cookitter_sign";
 
 export const appRender = () => {
   const doc = app.activeDocument;
   var log: any[] = [];
-
-  log.push(`hello`);
 
   const sLayer = doc.layers.getByName("taglio");
   log.push(`found layer ${sLayer.name}`);
@@ -75,17 +90,18 @@ export const appRender = () => {
 
   const syncItems = mkSyncItems(doc, dLayer);
 
-  // Objects store for fast lookups
+  // Items store for quick lookups
   var store: Store = {};
 
   // Loops on source items
+  log.push(`L1: loops on source items`);
   for (var i = 0; i < sPathItems.length; i++) {
     const sPi = sPathItems[i];
 
     log.push(`L1: found item ${sPi.name}`);
-    const tag: Tag | null = getByNameSafe(sPi.tags, cookitterTagName);
-    log.push(`L1: found tag ${tag?.name}:${tag?.value}`);
+    const tag: Tag | null = getByNameSafe(sPi.tags, cookitterTagNameId);
     if (tag) {
+      log.push(`L1: found tag ${tag?.name}:${tag?.value}`);
       const key = tag.value;
       const es = store[key];
 
@@ -104,6 +120,7 @@ export const appRender = () => {
       } else {
         // first time we find this tagged element
         // let's add it to the store
+        log.push(`L1: adding source item`);
         store[tag.value] = {
           source: sPi,
           destination: null,
@@ -114,7 +131,7 @@ export const appRender = () => {
       // original element without an id
       // let's give this element a new id, and add it to the store
       const newTag = sPi.tags.add();
-      newTag.name = cookitterTagName;
+      newTag.name = cookitterTagNameId;
       const newId = generateID(store);
       newTag.value = newId;
       store[newId] = {
@@ -125,11 +142,16 @@ export const appRender = () => {
   }
 
   log.push("L1 store:");
-  log.push(ss(store));
+  log.push({ store: ss(store) });
 
   // Loops on destination items
   // We need a temporary copy of the destination elements because
   // we are removing ad adding elements while loooping.
+
+  log.push(`L2: loops on destination items`);
+  if (dPathItems.length == 0) {
+    log.push("L2 no destination items");
+  }
   var tmp: PathItem[] = [];
   for (var i = 0; i < dPathItems.length; i++) {
     tmp.push(dPathItems[i]);
@@ -138,9 +160,9 @@ export const appRender = () => {
     const dPi = tmp[i];
 
     log.push(`L2: found item ${dPi.name}`);
-    const tag: Tag = getByNameSafe(dPi.tags, cookitterTagName);
-    log.push(`L2: found tag ${tag?.name}:${tag?.value}`);
+    const tag: Tag = getByNameSafe(dPi.tags, cookitterTagNameId);
     if (tag) {
+      log.push(`L2: found tag ${tag?.name}:${tag?.value}`);
       const key = tag.value;
 
       const es = store[key];
@@ -149,14 +171,17 @@ export const appRender = () => {
         if (es?.destination) {
           // we have already found another destination element with this id
           // this is a duplicate.
+          log.push(`L2: remove destination item: ${dPi.name}`);
           dPi.remove();
         } else {
+          log.push(`L2: found source item with same id`);
           // a source item with the same id of a destination one
           // we should pair them
           es.destination = dPi;
           // TODO check the diff and update?
 
-          syncItems(es);
+          log.push(`L2: syncing items`);
+          log.push(syncItems(es));
           log.concat();
 
           delete store[key];
@@ -164,26 +189,29 @@ export const appRender = () => {
       } else {
         // the destinaiton element has an id, but we did not have a source
         // element, the source element has probably being delete.
+        log.push(`L2: remove destination item: ${dPi.name}`);
         dPi.remove();
       }
     } else {
       // destination element without an id
       // this is maybe an use element, deleting it is not
       // polite but what could we do?
+      log.push(`L2: remove destination item: ${dPi.name}`);
       dPi.remove();
     }
   }
 
   log.push("L2 store:");
-  log.push(ss(store));
+  log.push({ store: ss(store) });
 
   // loop over source elements without a destination
+  log.push(`L3: loops on source items without a destination`);
   for (var elem in store) {
-    log.concat(syncItems(store[elem]));
+    log.push(syncItems(store[elem]));
   }
 
   log.push("L3 store:");
-  log.push(ss(store));
+  log.push({ store: ss(store) });
 
   return log;
 };
@@ -212,12 +240,42 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
     var log: any[] = [];
     const sPi = es.source;
     const dPi = es.destination;
-    log.push(`syncing ${sPi.name} ${dPi?.name}`);
+    log.push(`syncing: ${sPi.name}`);
 
+    // getting source items signature
+    const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameSignature);
+    log.push(`tag: ${tag?.name}`);
+    const newSignature: string = hashString(
+      JSON.stringify(serializePathItem(sPi))
+    );
+    log.push(`new signature ${newSignature}`);
+    if (tag) {
+      log.push(`old signature ${tag?.value}`);
+      if (tag?.value == newSignature) {
+        // the item has not changed
+        // so we can return
+        log.push(`no change`);
+        return log;
+      } else {
+        tag.value = newSignature;
+        // the item has changed we
+        // must recreate it
+        // TODO try update only changed properties?
+      }
+    } else {
+      log.push(`added missing signature`);
+      // no signatue, let's create it
+      const newTag = sPi.tags.add();
+      newTag.name = cookitterTagNameSignature;
+      newTag.value = newSignature;
+    }
+
+    // we need to recreate the destination item
     if (dPi) {
       dPi.remove();
-    } // TODO reuse original object
+    }
 
+    // create destination item
     const pathItemRect = pathItemRectangle(sPi);
     // the path item is missing
     log.push({ type: "searcing", shape: sPi.name, pathItemRect, artRectangle });
@@ -236,7 +294,10 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
       dPi.selected = false;
       dPi.locked = true;
 
-      movePathItem(dPi, sArtboard, dArtboard);
+      // mirror vertically
+      dPi.resize(-100, 100);
+
+      dPi.position = newPositionPathItem(pathItemRect, sArtboard, dArtboard);
     } else {
       log.push({ type: "board not found", shape: sPi.name });
     }
@@ -245,19 +306,94 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
   };
 }
 
-function movePathItem(pi: PageItem, source: Artboard, dest: Artboard) {
-  // mirror vertically
-  pi.resize(-100, 100);
+function mapp(data: any, f: any) {
+  var tmp = [];
+  for (var i = 0; i < data.length; i++) {
+    tmp.push(f(data[i]));
+  }
+  return tmp;
+}
 
-  const deltax = pi.position[0] - source.artboardRect[0];
-  const deltay = pi.position[1] - source.artboardRect[1];
+function serializePathItem(pi: PathItem) {
+  return {
+    // the commented properties are not considered as change
+    area: pi.area,
+    controlBounds: pi.controlBounds,
+    // TODO fillColor:
+    filled: pi.filled,
+    fillOverprint: pi.fillOverprint,
+    geometricBounds: pi.geometricBounds,
+    guides: pi.guides,
+    height: pi.height,
+    lenght: pi.length,
+    // locked: pi.locked,
+    name: pi.name,
+    note: pi.note,
+    opacity: pi.opacity,
+    pathPoints: mapp(pi.pathPoints, serializePathPoint),
+    position: pi.position,
+    resolution: pi.resolution,
+    // selected: pi.selected,
+    sliced: pi.sliced,
+    stroke: pi.stroked
+      ? {
+          // TODO strokeCap
+          // TODO strokeColor: pi.strokeColor,
+          strokeDashes: pi.strokeDashes,
+          strokeDashOffset: pi.strokeDashOffset,
+          strokeJoin: pi.strokeJoin,
+          strokeMiterLimit: pi.strokeMiterLimit,
+          strokeOverprint: pi.strokeOverprint,
+          strokeWidth: pi.strokeWidth,
+        }
+      : false,
+    // tags:...
+    top: pi.top,
+    typename: pi.typename,
+    width: pi.width,
+    wrap: pi.wrapped
+      ? {
+          wrapInside: pi.wrapInside,
+          wrapOffset: pi.wrapOffset,
+        }
+      : false,
+    zOrderPosition: pi.zOrderPosition,
+    // locked: pi.locked,
+  };
+}
 
-  $.writeln(`delta ${deltax},${deltay}`);
+function serializePathPoint(pp: PathPoint) {
+  return {
+    anchor: pp.anchor,
+    leftDirection: pp.leftDirection,
+    pointType: pp.pointType,
+    rightDirection: pp.rightDirection,
+    typename: pp.typename,
+  };
+}
 
-  const artbx = dest.artboardRect[2] - deltax - pi.width;
+function hashString(str: string): string {
+  var hash = 0x811c9dc5; // 32-bit FNV offset basis
+  for (var i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash +=
+      (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return (hash >>> 0).toString(16); // Return as hexadecimal
+}
+
+function newPositionPathItem(
+  pos: Rectangle,
+  source: Artboard,
+  dest: Artboard
+): [number, number] {
+  const deltax = pos.x - source.artboardRect[0];
+  const deltay = pos.y - source.artboardRect[1];
+
+  const artbx = dest.artboardRect[2] - deltax - pos.width;
   const artby = dest.artboardRect[1] + deltay;
 
-  pi.position = [artbx, artby];
+  return [artbx, artby];
   // pi.left = artbx;
   // pi.top = artby;
 }
