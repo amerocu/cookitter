@@ -1,53 +1,49 @@
-import { _getLayers, findIntersections } from "./ilst.pure";
+import { _getLayers, findIntersections, Rectangle } from "./ilst.pure";
 
-// Function to test
-function add(a: number, b: number): number {
-  return a + b;
-}
+const rectangles: Rectangle[] = [
+  { x: 0, y: 0, width: 49, height: 49 },
+  {
+    x: 50,
+    y: 0,
+    width: 49,
+    height: 49,
+  },
+  {
+    x: 0,
+    y: -50,
+    width: 49,
+    height: 49,
+  },
+  {
+    x: 50,
+    y: -50,
+    width: 49,
+    height: 49,
+  },
+];
 
-const data = {
-  rectangles: [
-    { x: 0, y: 0, width: 49, height: 49 },
-    {
-      x: 50,
-      y: 0,
-      width: 49,
-      height: 49,
-    },
-    {
-      x: 0,
-      y: 50,
-      width: 49,
-      height: 49,
-    },
-    {
-      x: 50,
-      y: 50,
-      width: 49,
-      height: 49,
-    },
-  ],
-  zero: {
+const data: Record<string, Rectangle> = {
+  "0": {
     x: 10,
-    y: 10,
+    y: -10,
     width: 5,
     height: 5,
   },
-  uno: {
+  "1": {
     x: 60,
-    y: 10,
+    y: -10,
     width: 5,
     height: 5,
   },
-  due: {
+  "2": {
     x: 10,
-    y: 60,
+    y: -60,
     width: 5,
     height: 5,
   },
-  tre: {
+  "3": {
     x: 60,
-    y: 60,
+    y: -60,
     width: 5,
     height: 5,
   },
@@ -55,17 +51,37 @@ const data = {
 
 describe("list.tests.ts", () => {
   describe("findIntersections", () => {
-    test("find element 0", () => {
-      expect(findIntersections(data.zero, data.rectangles)).toEqual(0);
+    rectangles.forEach((element, idx) => {
+      test("find rectangle " + idx, () => {
+        expect(findIntersections(element, rectangles)).toEqual(idx);
+      });
     });
-    test("find element 1", () => {
-      expect(findIntersections(data.uno, data.rectangles)).toEqual(1);
+
+    ["0", "1", "2", "3"].forEach((element: string, idx) => {
+      test("find element " + idx, () => {
+        expect(findIntersections(data[element], rectangles)).toEqual(idx);
+      });
     });
-    test("find element 2", () => {
-      expect(findIntersections(data.due, data.rectangles)).toEqual(2);
-    });
-    test("find element 3", () => {
-      expect(findIntersections(data.tre, data.rectangles)).toEqual(3);
+
+    test("regression 1", () => {
+      expect(
+        findIntersections(
+          {
+            height: 91.8005812630472,
+            width: 106.002180607973,
+            x: 30.3715454719049,
+            y: -461.884575266695,
+          },
+          [
+            {
+              height: 283.4645669291,
+              width: 283.4645669291,
+              x: 0,
+              y: -301.552252431315,
+            },
+          ]
+        )
+      ).toEqual(0);
     });
   });
   describe("getLayers", () => {
@@ -79,11 +95,6 @@ describe("list.tests.ts", () => {
           },
         })()
       ).toEqual([]);
-    });
-
-    test("one layer", () => {
-      expect(add(2, 3)).toBe(5);
-      expect(add(-1, 1)).toBe(0);
     });
   });
 });

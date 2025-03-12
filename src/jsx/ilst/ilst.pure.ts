@@ -22,16 +22,12 @@ export type Rectangle = {
 };
 
 export function intersects(a: Rectangle, b: Rectangle): boolean {
-  // X1+W1<X2 or
-  // X2+W2<X1 or
-  // Y1+H1<Y2 or
-  // Y2+H2<Y1
-  return !(
-    a.x + a.width < b.x ||
-    b.x + b.width < a.x ||
-    a.y + a.height < b.y ||
-    b.y + b.height < a.y
-  );
+  const t1 = a.x + a.width < b.x,
+    t2 = b.x + b.width < a.x,
+    t3 = a.y - a.height > b.y,
+    t4 = b.y - b.height > a.y;
+
+  return !(t1 || t2 || t3 || t4);
 }
 
 export function findIntersections(

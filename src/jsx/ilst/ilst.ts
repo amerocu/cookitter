@@ -58,15 +58,11 @@ export const appRender = () => {
 
   const sPathItems = sLayer.pathItems;
   for (var i = 0; i < sPathItems.length; i++) {
-    // TODO skip nameless path items
     const sPi = sPathItems[i];
-
-    // TODO update elements
-    const result = null; // getByNameSafe(dLayer.pathItems, "tagliato-" + sPi.name);
 
     const pathItemRect = pathItemRectangle(sPi);
     // the path item is missing
-    log.push({ type: "searcing", pathItemRect, artRectangle });
+    log.push({ type: "searcing", shape: sPi.name, pathItemRect, artRectangle });
     const sArtboardIdx = findIntersections(pathItemRect, artRectangle);
 
     log.push(`found ${sArtboardIdx}`);
@@ -80,6 +76,8 @@ export const appRender = () => {
       const dPi = sPi.duplicate(dLayer, ElementPlacement.INSIDE);
 
       movePathItem(dPi, sArtboard, dArtboard);
+    } else {
+      log.push({ type: "board not found", shape: sPi.name });
     }
   }
   return log;
