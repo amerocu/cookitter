@@ -32,14 +32,8 @@ const Main = () => {
   };
 
   const rerender = () => {
-    console.log("rerender: start");
-    evalTS("appReset").then((res) => {
+    evalTS("appRender").then((res) => {
       console.log(typeof res, res);
-      console.log("rerender: done reset");
-      evalTS("appRender").then((res) => {
-        console.log(typeof res, res);
-        console.log("rerender: done render");
-      });
     });
   };
 

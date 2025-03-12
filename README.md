@@ -6,7 +6,6 @@
 
 - feat: re-render only changed elements
 - feat: re-render should render before deleting the old items
-- feat: use tags to put ids on elements and track their life?
 - feat: make pages arrangement configurable
 
 ### Needed
@@ -17,12 +16,18 @@
 ### Useful
 
 - feat: copy multiple types of elements
-- feat: copy layers and groups tree
+- feat: copy layers and groups three
+- feat: handle locked layers
+
+  name: "Error"
+  message: "Cannot modify a layer that is locked"
+  number: 9024
 
 ## Done
 
 - feat: lock the copied elements
 - fix: the copy and the original element are in a group selection when the original one is selected
+- feat: use tags to put ids on elements and track their life?
 
 ## Known Bugs
 
