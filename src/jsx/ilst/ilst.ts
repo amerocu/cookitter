@@ -76,6 +76,7 @@ export const appRender = () => {
       const dPi = sPi.duplicate(dLayer, ElementPlacement.INSIDE);
 
       dPi.selected = false;
+      dPi.locked = true;
 
       movePathItem(dPi, sArtboard, dArtboard);
     } else {
