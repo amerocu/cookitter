@@ -7,6 +7,7 @@
 - feat: re-render only changed elements
 - feat: re-render should render before deleting the old items
 - feat: use tags to put ids on elements and track their life?
+- feat: make pages arrangement configurable
 
 ### Needed
 
