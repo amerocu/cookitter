@@ -11,64 +11,88 @@ import {
 import "./main.scss";
 
 const Main = () => {
-  const [layers, setLayers] = useState<{ name: string; visible: boolean }[]>(
-    []
-  );
-  const [mainLayer, setMainLayer] = useState<string>("none"); // Store selected layer
-  const [sideLayer, setSideLayer] = useState<string>(""); // Store selected layer
+  const [isSyncEnabled, setIsSyncEnabled] = useState<boolean>(false); // Store selected layer
+  const [syncInternval, setSyncInternval] = useState<number>(1000);
+  const [timerId, setTimerId] = useState<NodeJS.Timer | null>(null);
 
-  const jsxSerialize = () => {
+  const serialize = () => {
     evalTS("appSerialize").then((res) => {
       console.log(typeof res, res);
     });
   };
-  const jsxRender = () => {
+  const render = () => {
     evalTS("appRender").then((res) => {
       console.log(typeof res, res);
     });
   };
-  const jsxReset = () => {
+  const reset = () => {
     evalTS("appReset").then((res) => {
       console.log(typeof res, res);
     });
   };
 
-  useEffect(() => {
-    evalTS("getLayers").then((result) => {
-      if (result) {
-        try {
-          setLayers(result);
-        } catch (error) {
-          console.error("Failed to parse layer data:", error);
-        }
-      }
+  const rerender = () => {
+    console.log("rerender: start");
+    evalTS("appReset").then((res) => {
+      console.log(typeof res, res);
+      console.log("rerender: done reset");
+      evalTS("appRender").then((res) => {
+        console.log(typeof res, res);
+        console.log("rerender: done render");
+      });
     });
-  }, []);
+  };
+
+  // Timer Functions
+  const startSync = () => {
+    if (!isSyncEnabled) {
+      const id = setInterval(rerender, syncInternval);
+      setTimerId(id);
+      setIsSyncEnabled(true);
+    }
+  };
+
+  const stopSync = () => {
+    if (timerId) {
+      clearInterval(timerId);
+      setTimerId(null);
+    }
+    setIsSyncEnabled(false);
+  };
+
+  const toggleSync = () => {
+    if (isSyncEnabled) {
+      stopSync();
+    } else {
+      startSync();
+    }
+  };
+
+  useEffect(() => {
+    if (isSyncEnabled) {
+      stopSync();
+      startSync();
+    }
+  }, [syncInternval]);
 
   return (
     <div className="app">
       <header>
         <div>
-          <p>Illustrator Layers {layers.length}</p>
-          <select
-            value={mainLayer}
-            onChange={(e) => setMainLayer(e.target.value)}
-          >
-            <option key="none" value="none">
-              none
-            </option>
-            {layers.map((layer, index) => (
-              <option key={layer.name} value={layer.name}>
-                {layer.name}
-              </option>
-            ))}
-          </select>
-          <button onClick={jsxSerialize}>Serialize</button>
-          <button onClick={jsxRender}>Render</button>
-          <button onClick={jsxReset}>Reset</button>
-          <p>
-            Main layer: <code>{mainLayer}</code>
-          </p>
+          <p>Cookitter</p>
+
+          <button onClick={serialize}>Serialize</button>
+          <button onClick={render}>Render</button>
+          <button onClick={reset}>Reset</button>
+          <button onClick={toggleSync}>
+            {isSyncEnabled ? "Stop Sync" : "Start Sync"}
+          </button>
+          <input
+            type="number"
+            value={syncInternval}
+            onChange={(e: any) => setSyncInternval(Number(e.target.value))}
+            className="mt-1"
+          />
           <p>version: 0.0.3</p>
         </div>
       </header>
