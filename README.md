@@ -2,14 +2,26 @@
 
 ## Todo
 
-- feat: re-render should render before deleting the old items
+### Important
+
 - feat: re-render only changed elements
-- feat: visual clue of which are the cloned elements and which are the original one
-- ~~feat: lock the copied elements~~
-- ~~fix: the copy and the original element are in a group selection when the original one is selected~~
-- feat: show how much it took to render the elements
-- feat: copy multiple types of elements
+- feat: re-render should render before deleting the old items
 - feat: use tags to put ids on elements and track their life?
+
+### Needed
+
+- feat: visual clue of which are the cloned elements and which are the original one
+- feat: show how much it took to render the elements
+
+### Useful
+
+- feat: copy multiple types of elements
+- feat: copy layers and groups tree
+
+## Done
+
+- feat: lock the copied elements
+- fix: the copy and the original element are in a group selection when the original one is selected
 
 ## Known Bugs
 
