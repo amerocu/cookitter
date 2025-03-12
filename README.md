@@ -1,5 +1,15 @@
 # Cookitter
 
+Cookitter from "cookie cutter" allows you to mirror elements from one artbook to another.
+
+The use case is to aid the design of books with holes, holes needs to be mirrored from one side to the other side of the same page.
+
+To allow Cookitter to understand your project, artbooks that needs to be mirrored should be name accordinly to this format: `CK-<page_number>-<side_lette>`. For example the first side of the first page should be called `CK-1-A` while the second side will be `CK-1-B`.
+
+All holes needs to be in one top level layer called `cookie`.
+
+All copyed holes will be saved insde the layer called `cutter`.
+
 ## Todo
 
 ### Important
@@ -12,6 +22,7 @@
 
 ### Useful
 
+- feat: manage elements that span multiple artbook
 - feat: copy multiple types of elements
 - feat: copy layers and groups three
 - feat: handle locked layers

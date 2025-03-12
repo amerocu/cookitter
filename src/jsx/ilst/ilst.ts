@@ -4,12 +4,14 @@ import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
 
 export * from "./serialize";
 
+const sLayerName = "cookie";
+const dLayerName = "cutter";
+
 export const appReset = () => {
   var log: any[] = [];
   if (app.documents.length === 0) return "No document open.";
 
   var doc = app.activeDocument;
-  const sLayerName = "taglio";
   var sLayer = doc.layers.getByName(sLayerName);
 
   if (sLayer) {
@@ -25,7 +27,6 @@ export const appReset = () => {
     }
   }
 
-  const dLayerName = "tagliato";
   var dLayer = doc.layers.getByName(dLayerName);
 
   if (dLayer) {
@@ -81,11 +82,11 @@ export const appRender = () => {
   const doc = app.activeDocument;
   var log: any[] = [];
 
-  const sLayer = doc.layers.getByName("taglio");
+  const sLayer = doc.layers.getByName(sLayerName);
   log.push(`found layer ${sLayer.name}`);
   const sPathItems = sLayer.pathItems;
 
-  const dLayer = doc.layers.getByName("tagliato");
+  const dLayer = doc.layers.getByName(dLayerName);
   log.push(`found layer ${dLayer.name}`);
   const dPathItems = dLayer.pathItems;
 
