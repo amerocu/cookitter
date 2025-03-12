@@ -75,6 +75,8 @@ export const appRender = () => {
       log.push(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
       const dPi = sPi.duplicate(dLayer, ElementPlacement.INSIDE);
 
+      dPi.selected = false;
+
       movePathItem(dPi, sArtboard, dArtboard);
     } else {
       log.push({ type: "board not found", shape: sPi.name });
@@ -156,6 +158,18 @@ function dumpPathItem(pi: PathItem) {
     width: pi.width,
     height: pi.height,
     top: pi.top,
+    locked: pi.locked,
+    selected: pi.selected,
+    stroked: pi.stroked,
+    stroke: {
+      // strokeColor: pi.strokeColor,
+      strokeDashes: pi.strokeDashes,
+      strokeDashOffset: pi.strokeDashOffset,
+      strokeJoin: pi.strokeJoin,
+      strokeMiterLimit: pi.strokeMiterLimit,
+      strokeOverprint: pi.strokeOverprint,
+      strokeWidth: pi.strokeWidth,
+    },
     pathPoints: mapp(pi.pathPoints, dumpPathPoint),
   };
 }
