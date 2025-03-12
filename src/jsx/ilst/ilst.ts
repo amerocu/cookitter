@@ -1,4 +1,3 @@
-import { _getLayers } from "./ilst.pure";
 import { findIntersections, Rectangle } from "./rectangle";
 import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
 
