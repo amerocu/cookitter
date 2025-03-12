@@ -87,7 +87,7 @@ const Main = () => {
             onChange={(e: any) => setSyncInternval(Number(e.target.value))}
             className="mt-1"
           />
-          <p>version: 0.0.3</p>
+          <p>version: 0.1.0</p>
         </div>
       </header>
     </div>
