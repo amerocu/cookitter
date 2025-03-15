@@ -389,7 +389,9 @@ function serializePathItem(pi: PathItem) {
           wrapOffset: pi.wrapOffset,
         }
       : false,
-    zOrderPosition: pi.zOrderPosition,
+    // zOrderPosition is bugged...
+    // zOrderPosition: pi.zOrderPosition,
+    // absoluteZOrderPosition: pi.absoluteZOrderPosition,
     // locked: pi.locked,
   };
 }
