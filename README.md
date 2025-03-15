@@ -4,15 +4,21 @@ Cookitter from "cookie cutter" allows you to mirror elements from one artbook to
 
 The use case is to aid the design of books with holes, holes needs to be mirrored from one side to the other side of the same page.
 
-To allow Cookitter to understand your project, artbooks that needs to be mirrored should be name accordinly to this format: `CK-<page_number>-<side_lette>`. For example the first side of the first page should be called `CK-1-A` while the second side will be `CK-1-B`.
+To allow Cookitter to work in your project some preparation is needed:
 
-All holes needs to be in one top level layer called `cookie`.
+1. Artbooks that needs their emelents to be mirrored should be name accordinly to this format: `CK-<page_number>-<side_lette>`.
 
-All copyed holes will be saved insde the layer called `cutter`.
+   For example the first side of the first page should be called `CK-1-A` while the second side will be `CK-1-B`.
+
+2. Create a layer called `cookie` to hold your elements.
+
+3. Create a layer called `cutter` in which Cookiecutter will place all mirrored elements.
 
 ## Todo
 
-### Important
+### Important\
+
+- feat: simplify UI.
 
 ### Needed
 
@@ -30,14 +36,6 @@ All copyed holes will be saved insde the layer called `cutter`.
   name: "Error"
   message: "Cannot modify a layer that is locked"
   number: 9024
-
-## Done
-
-- feat: lock the copied elements
-- fix: the copy and the original element are in a group selection when the original one is selected
-- feat: use tags to put ids on elements and track their life?
-- feat: re-render only changed elements
-- feat: make pages arrangement configurable
 
 ## Known Bugs
 
