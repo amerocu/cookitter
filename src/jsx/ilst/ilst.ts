@@ -10,17 +10,23 @@ const sLayerName = "cookie";
 const dLayerName = "cutter";
 
 export const appReset = () => {
+  l.i("appReset...");
   if (app.documents.length === 0) {
     l.e("No document open.");
     return;
   }
+  const doc: Document | null = app.activeDocument;
 
-  var doc = app.activeDocument;
-  var sLayer = doc.layers.getByName(sLayerName);
+  if (!doc) {
+    l.e("No document avaiable");
+    return;
+  }
 
-  l.i("appReset...");
+  var sLayer: Layer | null = getByNameSafe(doc.layers, sLayerName);
 
-  if (sLayer) {
+  if (!sLayer) {
+    l.e("No layer: " + sLayerName);
+  } else {
     const sPathItems = sLayer.pathItems;
     for (var i = 0; i < sPathItems.length; i++) {
       l.i(`deleting tags ${sPathItems[i].name}`);
@@ -33,16 +39,16 @@ export const appReset = () => {
     }
   }
 
-  var dLayer = doc.layers.getByName(dLayerName);
+  var dLayer: Layer | null = getByNameSafe(doc.layers, dLayerName);
 
-  if (dLayer) {
+  if (!dLayer) {
+    l.e("No layer: " + dLayerName);
+  } else {
     // Delete all items in the layer
     while (dLayer.pageItems.length > 0) {
       dLayer.pageItems[0].remove();
     }
   }
-
-  l.i(`Deleted all elements in ${dLayerName}`);
 };
 
 function generateID(store: Record<string, any>) {
@@ -84,13 +90,34 @@ const cookitterTagNameId = "cookitter_id";
 const cookitterTagNameSignature = "cookitter_sign";
 
 export const appRender = () => {
-  const doc = app.activeDocument;
+  l.i("appReset...");
 
-  const sLayer = doc.layers.getByName(sLayerName);
+  if (app.documents.length === 0) {
+    l.e("No document open.");
+    return;
+  }
+
+  const doc: Document | null = app.activeDocument;
+
+  if (!doc) {
+    l.e("No document avaiable");
+    return;
+  }
+
+  const sLayer: Layer | null = getByNameSafe(doc.layers, sLayerName);
+
+  if (!sLayer) {
+    l.e("No layer: " + sLayerName);
+    return;
+  }
   l.i(`found layer ${sLayer.name}`);
   const sPathItems = sLayer.pathItems;
 
-  const dLayer = doc.layers.getByName(dLayerName);
+  const dLayer: Layer | null = getByNameSafe(doc.layers, dLayerName);
+  if (!dLayer) {
+    l.e("No layer: " + dLayerName);
+    return;
+  }
   l.i(`found layer ${dLayer.name}`);
   const dPathItems = dLayer.pathItems;
 
@@ -315,7 +342,6 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
 
       const lIF = matchLayer(sArtboard.name);
       if (!lIF) {
-        // TODO l.i({ type: "board name invalid", artboard: sArtboard.name });
         l.i(`board name invalid  artboard: ${sArtboard.name} }`);
         return;
       }
@@ -433,7 +459,7 @@ function newPositionPathItem(
   // pi.top = artby;
 }
 
-function getByNameSafe(collection: any, name: string) {
+function getByNameSafe(collection: any, name: string): any | null {
   for (var i = 0; i < collection.length; i++) {
     if (collection[i].name === name) {
       return collection[i];
