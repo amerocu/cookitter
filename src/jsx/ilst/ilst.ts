@@ -1,23 +1,29 @@
 import { matchLayer, addInSet, getFromSet, mapp } from "./utils";
 import { findIntersections, Rectangle } from "./rectangle";
 import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
-
+import Logger from "./logger";
 export * from "./serialize";
+
+var l = Logger({ name: "main", alsoDebug: true, enable: true });
 
 const sLayerName = "cookie";
 const dLayerName = "cutter";
 
 export const appReset = () => {
-  var log: any[] = [];
-  if (app.documents.length === 0) return "No document open.";
+  if (app.documents.length === 0) {
+    l.e("No document open.");
+    return;
+  }
 
   var doc = app.activeDocument;
   var sLayer = doc.layers.getByName(sLayerName);
 
+  l.i("appReset...");
+
   if (sLayer) {
     const sPathItems = sLayer.pathItems;
     for (var i = 0; i < sPathItems.length; i++) {
-      log.push(`deleting tags ${sPathItems[i].name}`);
+      l.i(`deleting tags ${sPathItems[i].name}`);
       // NOTE this does not work!!
       // sPathItems[i].tags.removeAll();
       const tags = sPathItems[i].tags;
@@ -36,8 +42,7 @@ export const appReset = () => {
     }
   }
 
-  log.push(`Deleted all elements in ${dLayerName}`);
-  return log;
+  l.i(`Deleted all elements in ${dLayerName}`);
 };
 
 function generateID(store: Record<string, any>) {
@@ -72,7 +77,7 @@ function ss(store: Store) {
       destination: val.destination?.name ?? null,
     };
   }
-  return s;
+  return JSON.stringify(s);
 }
 
 const cookitterTagNameId = "cookitter_id";
@@ -80,40 +85,39 @@ const cookitterTagNameSignature = "cookitter_sign";
 
 export const appRender = () => {
   const doc = app.activeDocument;
-  var log: any[] = [];
 
   const sLayer = doc.layers.getByName(sLayerName);
-  log.push(`found layer ${sLayer.name}`);
+  l.i(`found layer ${sLayer.name}`);
   const sPathItems = sLayer.pathItems;
 
   const dLayer = doc.layers.getByName(dLayerName);
-  log.push(`found layer ${dLayer.name}`);
+  l.i(`found layer ${dLayer.name}`);
   const dPathItems = dLayer.pathItems;
 
-  const syncItems = mkSyncItems(log, doc, dLayer);
+  const syncItems = mkSyncItems(doc, dLayer);
 
   // Items store for quick lookups
   var store: Store = {};
 
   // Loops on source items
-  log.push(`L1: loops on source items`);
+  l.i(`L1: loops on source items`);
   for (var i = 0; i < sPathItems.length; i++) {
     const sPi = sPathItems[i];
 
-    log.push(`L1: found item ${sPi.name}`);
+    l.i(`L1: found item ${sPi.name}`);
     const tag: Tag | null = getByNameSafe(sPi.tags, cookitterTagNameId);
     if (tag) {
-      log.push(`L1: found tag ${tag?.name}:${tag?.value}`);
+      l.i(`L1: found tag ${tag?.name}:${tag?.value}`);
       const key = tag.value;
       const es = store[key];
 
-      log.push(`L1: found ${key}:${es}`);
+      l.i(`L1: found ${key}:${es}`);
       if (es) {
         // two source elements have the same id
         // probably the second is a copy of the first
         // let's give this element a new id, and add it to the store
         const newId = generateID(store);
-        log.push(`L1: new id ${newId}`);
+        l.i(`L1: new id ${newId}`);
         tag.value = newId;
         store[newId] = {
           source: sPi,
@@ -122,14 +126,14 @@ export const appRender = () => {
       } else {
         // first time we find this tagged element
         // let's add it to the store
-        log.push(`L1: adding source item`);
+        l.i(`L1: adding source item`);
         store[tag.value] = {
           source: sPi,
           destination: null,
         };
       }
     } else {
-      log.push(`L1: tag not found`);
+      l.i(`L1: tag not found`);
       // original element without an id
       // let's give this element a new id, and add it to the store
       const newTag = sPi.tags.add();
@@ -143,16 +147,16 @@ export const appRender = () => {
     }
   }
 
-  log.push("L1 store:");
-  log.push({ store: ss(store) });
+  l.i("L1 store:");
+  l.i(ss(store));
 
   // Loops on destination items
   // We need a temporary copy of the destination elements because
   // we are removing ad adding elements while loooping.
 
-  log.push(`L2: loops on destination items`);
+  l.i(`L2: loops on destination items`);
   if (dPathItems.length == 0) {
-    log.push("L2 no destination items");
+    l.i("L2 no destination items");
   }
   var tmp: PathItem[] = [];
   for (var i = 0; i < dPathItems.length; i++) {
@@ -161,10 +165,10 @@ export const appRender = () => {
   for (var i = 0; i < tmp.length; i++) {
     const dPi = tmp[i];
 
-    log.push(`L2: found item ${dPi.name}`);
+    l.i(`L2: found item ${dPi.name}`);
     const tag: Tag = getByNameSafe(dPi.tags, cookitterTagNameId);
     if (tag) {
-      log.push(`L2: found tag ${tag?.name}:${tag?.value}`);
+      l.i(`L2: found tag ${tag?.name}:${tag?.value}`);
       const key = tag.value;
 
       const es = store[key];
@@ -173,56 +177,53 @@ export const appRender = () => {
         if (es?.destination) {
           // we have already found another destination element with this id
           // this is a duplicate.
-          log.push(`L2: remove destination item: ${dPi.name}`);
+          l.i(`L2: remove destination item: ${dPi.name}`);
           dPi.remove();
         } else {
-          log.push(`L2: found source item with same id`);
+          l.i(`L2: found source item with same id`);
           // a source item with the same id of a destination one
           // we should pair them
           es.destination = dPi;
           // TODO check the diff and update?
 
-          log.push(`L2: syncing items`);
-          log.push(syncItems(es));
-          log.concat();
+          l.i(`L2: syncing items`);
+          syncItems(es);
 
           delete store[key];
         }
       } else {
         // the destinaiton element has an id, but we did not have a source
         // element, the source element has probably being delete.
-        log.push(`L2: remove destination item: ${dPi.name}`);
+        l.i(`L2: remove destination item: ${dPi.name}`);
         dPi.remove();
       }
     } else {
       // destination element without an id
       // this is maybe an use element, deleting it is not
       // polite but what could we do?
-      log.push(`L2: remove destination item: ${dPi.name}`);
+      l.i(`L2: remove destination item: ${dPi.name}`);
       dPi.remove();
     }
   }
 
-  log.push("L2 store:");
-  log.push({ store: ss(store) });
+  l.i("L2 store:");
+  l.i(ss(store));
 
   // loop over source elements without a destination
-  log.push(`L3: loops on source items without a destination`);
+  l.i(`L3: loops on source items without a destination`);
   for (var elem in store) {
-    log.push(syncItems(store[elem]));
+    syncItems(store[elem]);
   }
 
-  log.push("L3 store:");
-  log.push({ store: ss(store) });
-
-  return log;
+  l.i("L3 store:");
+  l.i(ss(store));
 };
 
 type PageNumber = string;
 type GroupNumber = string;
 type SideNumber = string;
 
-function mkSyncItems(log: any[], doc: Document, dLayer: Layer) {
+function mkSyncItems(doc: Document, dLayer: Layer) {
   var artboards: Artboard[] = [];
   var artMap: Record<string, Artboard> = {};
   var artRectangle: Rectangle[] = [];
@@ -257,32 +258,31 @@ function mkSyncItems(log: any[], doc: Document, dLayer: Layer) {
         artboard,
         artMapping
       );
-      log.push(`added artboard:${artboard.name}`);
+      l.i(`added artboard:${artboard.name}`);
     } else {
-      log.push(`ignoring artboard:${artboard.name}`);
+      l.i(`ignoring artboard:${artboard.name}`);
     }
   }
 
   return (es: ElementStore) => {
-    var log: any[] = [];
     const sPi = es.source;
     const dPi = es.destination;
-    log.push(`syncing: ${sPi.name}`);
+    l.i(`syncing: ${sPi.name}`);
 
     // getting source items signature
     const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameSignature);
-    log.push(`tag: ${tag?.name}`);
-    const newSignature: string = hashString(
-      JSON.stringify(serializePathItem(sPi))
-    );
-    log.push(`new signature ${newSignature}`);
+    l.i(`tag: ${tag?.name}`);
+    const itemBlob = JSON.stringify(serializePathItem(sPi));
+    l.i(`item: ${itemBlob}`);
+    const newSignature: string = hashString(itemBlob);
+    l.i(`new signature ${newSignature}`);
     if (tag) {
-      log.push(`old signature ${tag?.value}`);
+      l.i(`old signature ${tag?.value}`);
       if (tag?.value == newSignature) {
         // the item has not changed
         // so we can return
-        log.push(`no change`);
-        return log;
+        l.i(`no change`);
+        return;
       } else {
         tag.value = newSignature;
         // the item has changed we
@@ -290,7 +290,7 @@ function mkSyncItems(log: any[], doc: Document, dLayer: Layer) {
         // TODO try update only changed properties?
       }
     } else {
-      log.push(`added missing signature`);
+      l.i(`added missing signature`);
       // no signatue, let's create it
       const newTag = sPi.tags.add();
       newTag.name = cookitterTagNameSignature;
@@ -305,18 +305,19 @@ function mkSyncItems(log: any[], doc: Document, dLayer: Layer) {
     // create destination item
     const pathItemRect = pathItemRectangle(sPi);
     // the path item is missing
-    log.push({ type: "searcing", shape: sPi.name, pathItemRect, artRectangle });
+    l.i(`searcing sha: ${sPi.name} ${pathItemRect} ${artRectangle}`);
 
     const sArtboardIdx = findIntersections(pathItemRect, artRectangle);
-    log.push(`found ${sArtboardIdx}`);
+    l.i(`found ${sArtboardIdx}`);
 
     if (sArtboardIdx !== null) {
       const sArtboard = artboards[sArtboardIdx];
 
       const lIF = matchLayer(sArtboard.name);
       if (!lIF) {
-        log.push({ type: "board name invalid", artboard: sArtboard.name });
-        return log;
+        // TODO l.i({ type: "board name invalid", artboard: sArtboard.name });
+        l.i(`board name invalid  artboard: ${sArtboard.name} }`);
+        return;
       }
 
       const newSide = (lIF.side % 2) + 1;
@@ -326,10 +327,10 @@ function mkSyncItems(log: any[], doc: Document, dLayer: Layer) {
         artMapping
       );
       if (!dArtboard) {
-        log.push({ type: "board name without pair", artboard: sArtboard.name });
-        return log;
+        l.i(`board name without pair: ${sArtboard.name} }`);
+        return;
       }
-      log.push(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
+      l.i(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
       const dPi = sPi.duplicate(dLayer, ElementPlacement.INSIDE);
 
       dPi.selected = false;
@@ -340,10 +341,8 @@ function mkSyncItems(log: any[], doc: Document, dLayer: Layer) {
 
       dPi.position = newPositionPathItem(pathItemRect, sArtboard, dArtboard);
     } else {
-      log.push({ type: "board not found", shape: sPi.name });
+      l.i(`board not found, shape ${sPi.name} }`);
     }
-
-    return log;
   };
 }
 

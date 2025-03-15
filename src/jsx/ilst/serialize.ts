@@ -1,9 +1,16 @@
 import { mapp } from "./utils";
+import Logger from "./logger";
+
+var l = Logger({ name: "serialize", alsoDebug: true, enable: true });
 
 export const serializeApp = () => {
   const doc = app.activeDocument;
 
+  l.i("serializing...");
+
   return {
+    aliasPath: $.fileName,
+    engine: $.engineName,
     layers: mapp(doc.layers, serializeLayer),
     artboards: mapp(doc.artboards, serializeArtboard),
   };
