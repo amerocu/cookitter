@@ -121,7 +121,7 @@ export const appRender = () => {
   l.i(`found layer ${dLayer.name}`);
   const dPathItems = dLayer.pathItems;
 
-  const syncItems = mkSyncItems(doc, dLayer);
+  const artBag = mkArtboardsBag(doc, dLayer);
 
   // Items store for quick lookups
   var store: Store = {};
@@ -214,7 +214,7 @@ export const appRender = () => {
           // TODO check the diff and update?
 
           l.i(`L2: syncing items`);
-          syncItems(es);
+          syncItems(artBag, dLayer, es);
 
           delete store[key];
         }
@@ -239,7 +239,7 @@ export const appRender = () => {
   // loop over source elements without a destination
   l.i(`L3: loops on source items without a destination`);
   for (var elem in store) {
-    syncItems(store[elem]);
+    syncItems(artBag, dLayer, store[elem]);
   }
 
   l.i("L3 store:");
@@ -250,7 +250,19 @@ type PageNumber = string;
 type GroupNumber = string;
 type SideNumber = string;
 
-function mkSyncItems(doc: Document, dLayer: Layer) {
+type ArtboardsMapping = Record<
+  PageNumber,
+  Record<GroupNumber, Record<SideNumber, Artboard>>
+>;
+
+type ArtboardsBag = {
+  artboards: Artboard[];
+  artMap: Record<string, Artboard>;
+  artRectangle: Rectangle[];
+  artMapping: ArtboardsMapping;
+};
+
+function mkArtboardsBag(doc: Document, dLayer: Layer): ArtboardsBag {
   var artboards: Artboard[] = [];
   var artMap: Record<string, Artboard> = {};
   var artRectangle: Rectangle[] = [];
@@ -291,7 +303,15 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
     }
   }
 
-  return (es: ElementStore) => {
+  return {
+    artboards,
+    artMap,
+    artRectangle,
+    artMapping,
+  };
+}
+
+function syncItems(artBag: ArtboardsBag, dLayer: Layer, es: ElementStore) {
     const sPi = es.source;
     const dPi = es.destination;
     l.i(`syncing: ${sPi.name}`);
@@ -332,13 +352,13 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
     // create destination item
     const pathItemRect = pathItemRectangle(sPi);
     // the path item is missing
-    l.i(`searcing sha: ${sPi.name} ${pathItemRect} ${artRectangle}`);
+  l.i(`searcing sha: ${sPi.name} ${pathItemRect} ${artBag.artRectangle}`);
 
-    const sArtboardIdx = findIntersections(pathItemRect, artRectangle);
+  const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
     l.i(`found ${sArtboardIdx}`);
 
     if (sArtboardIdx !== null) {
-      const sArtboard = artboards[sArtboardIdx];
+    const sArtboard = artBag.artboards[sArtboardIdx];
 
       const lIF = matchLayer(sArtboard.name);
       if (!lIF) {
@@ -350,7 +370,7 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
 
       const dArtboard = getFromSet(
         [lIF.page.toString(), lIF.group.toString(), newSide.toString()],
-        artMapping
+      artBag.artMapping
       );
       if (!dArtboard) {
         l.i(`board name without pair: ${sArtboard.name} }`);
@@ -365,11 +385,11 @@ function mkSyncItems(doc: Document, dLayer: Layer) {
       // mirror vertically
       dPi.resize(-100, 100);
 
-      dPi.position = newPositionPathItem(pathItemRect, sArtboard, dArtboard);
+    const newPos = newPositionPathItem(pathItemRect, sArtboard, dArtboard);
+    dPi.position = newPos;
     } else {
       l.i(`board not found, shape ${sPi.name} }`);
     }
-  };
 }
 
 function serializePathItem(pi: PathItem) {
