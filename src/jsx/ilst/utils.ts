@@ -65,7 +65,7 @@ function isNullOrUndefined(x: any) {
   return x == null;
 }
 
-export function objectKeys(obj: any) {
+export function objectKeys(obj: any): string[] {
   var keys = [];
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) {

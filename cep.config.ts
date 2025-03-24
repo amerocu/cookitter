@@ -1,7 +1,6 @@
 import { CEP_Config } from "vite-cep-plugin";
 import { version } from "./package.json";
 
-
 const config: CEP_Config = {
   version,
   id: "com.cookitter.cep",
@@ -39,18 +38,7 @@ const config: CEP_Config = {
       name: "main",
       panelDisplayName: "Cookitter",
       autoVisible: true,
-      width: 600,
-      height: 650,
     },
-    {
-      mainPath: "./settings/index.html",
-      name: "settings",
-      panelDisplayName: "Cookitter Settings",
-      autoVisible: true,
-      width: 600,
-      height: 650,
-    },
-
   ],
   build: {
     jsxBin: "off",

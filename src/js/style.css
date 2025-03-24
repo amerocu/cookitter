@@ -1,0 +1,83 @@
+.panel {
+  font-family: Arial, sans-serif;
+  background: #333;
+  color: #fff;
+  padding: 10px;
+  width: 350px;
+}
+
+.top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.button {
+  background: #555;
+  border: none;
+  color: white;
+  padding: 5px 7px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.toggle-button {
+  background: #777;
+  border: none;
+  color: white;
+  text-align: center;
+  cursor: pointer;
+  width: 25px;
+  border-radius: 3px;
+}
+
+.reset-button {
+  background: #777;
+  border: none;
+  color: white;
+  text-align: center;
+  cursor: pointer;
+  width: 25px;
+  border-radius: 3px;
+}
+
+.toggle-button.active {
+  background: #0a84ff;
+}
+
+.messages {
+  background: #222;
+  padding: 5px;
+  border-radius: 3px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 0;
+}
+
+.message.warning {
+  color: #ffa500;
+}
+
+.message.error {
+  color: #ff4d4d;
+}
+
+.bottom-row {
+  display: flex;
+  padding: 5px;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.help {
+  color: #0a84ff;
+  text-decoration: none;
+  cursor: pointer;
+}

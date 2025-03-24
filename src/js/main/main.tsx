@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { os, path } from "../lib/cep/node";
+import { objectKeys } from "../../jsx/ilst/utils";
 import {
   csi,
   evalES,
@@ -8,11 +9,19 @@ import {
   evalTS,
 } from "../lib/utils/bolt";
 
-import "./main.scss";
+import "../style.css";
+
+const speedLevels: Record<string, number> = {
+  slowest: 5000,
+  slow: 1000,
+  fast: 500,
+  fastest: 200,
+};
 
 const Main = () => {
-  const [isSyncEnabled, setIsSyncEnabled] = useState<boolean>(false); // Store selected layer
-  const [syncInternval, setSyncInternval] = useState<number>(1000);
+  const [isSyncEnabled, setIsSyncEnabled] = useState<boolean>(false);
+  const [doPortals, setDoPortals] = useState<boolean>(false);
+  const [refreshSpeed, setRefreshSpeed] = useState<string>("slow");
   const [timerId, setTimerId] = useState<NodeJS.Timer | null>(null);
 
   const serialize = () => {
@@ -20,32 +29,29 @@ const Main = () => {
       console.log(typeof res, res);
     });
   };
-  const render = () => {
-    evalTS("appRender").then((res) => {
-      console.log(typeof res, res);
-    });
-  };
-  const portals = () => {
-    evalTS("portalRender").then((res) => {
-      console.log(typeof res, res);
-    });
-  };
+
   const reset = () => {
     evalTS("appReset").then((res) => {
       console.log(typeof res, res);
     });
   };
 
-  const rerender = () => {
+  const sync = () => {
     evalTS("appRender").then((res) => {
       console.log(typeof res, res);
     });
+    if (doPortals) {
+      evalTS("portalRender").then((res) => {
+        console.log(typeof res, res);
+      });
+    }
   };
 
   // Timer Functions
   const startSync = () => {
     if (!isSyncEnabled) {
-      const id = setInterval(rerender, syncInternval);
+      const intervalms = speedLevels[refreshSpeed];
+      const id = setInterval(sync, intervalms);
       setTimerId(id);
       setIsSyncEnabled(true);
     }
@@ -72,30 +78,70 @@ const Main = () => {
       stopSync();
       startSync();
     }
-  }, [syncInternval]);
+  }, [refreshSpeed]);
+
+  const messages = [
+    { type: "warning", text: "Potential issue detected." },
+    { type: "error", text: "Sync failed!" },
+  ];
 
   return (
-    <div className="app">
-      <header>
-        <div>
-          <p>Cookitter</p>
-
-          <button onClick={serialize}>Serialize</button>
-          <button onClick={render}>Render</button>
-          <button onClick={portals}>Portals</button>
-          <button onClick={reset}>Reset</button>
-          <button onClick={toggleSync}>
-            {isSyncEnabled ? "Stop Sync" : "Start Sync"}
-          </button>
+    <div className="panel">
+      <div className="top-row">
+        <button className="button" onClick={sync}>
+          Sync
+        </button>
+        <button
+          className={`toggle-button ${isSyncEnabled ? "active" : ""}`}
+          onClick={toggleSync}
+        >
+          🔄
+        </button>
+        <label>
+          Portals
           <input
-            type="number"
-            value={syncInternval}
-            onChange={(e: any) => setSyncInternval(Number(e.target.value))}
-            className="mt-1"
+            type="checkbox"
+            checked={doPortals}
+            onChange={() => setDoPortals(!doPortals)}
           />
-          <p>version: 0.1.0</p>
-        </div>
-      </header>
+        </label>
+        <select
+          value={refreshSpeed}
+          onChange={(e) => setRefreshSpeed(e.target.value)}
+        >
+          <option value="slower">Slower</option>
+          <option value="slow">Slow</option>
+          <option value="fast">Fast</option>
+          <option value="fastest">Fastest</option>
+        </select>
+        <button className="toggle-button" onClick={reset}>
+          🚫
+        </button>
+      </div>
+      {/* Message List */}
+      <div className="messages">
+        {messages.map((msg, index) => (
+          <div key={index} className={`message ${msg.type}`}>
+            {msg.type === "warning" ? "⚠️" : "❌"} {msg.text}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer Row */}
+      <div className="bottom-row">
+        <span>v1.0.0</span>
+        <a onClick={serialize} className="help">
+          serialize
+        </a>
+        <a
+          onClick={() =>
+            openLinkInBrowser("https://github.com/amerocu/cookitter")
+          }
+          className="help"
+        >
+          Help
+        </a>
+      </div>
     </div>
   );
 };
