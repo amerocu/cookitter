@@ -1,24 +1,3 @@
-export function matchLayer(name: string) {
-  const regex = /[cC][kK]-(\d+)-([a-zA-Z])/;
-  const res = regex.exec(name);
-
-  if (res) {
-    const page = parseInt(res[1]);
-    const char = res[2].toUpperCase();
-    const sideNum = char.charCodeAt(0) - "A".charCodeAt(0) + 1;
-
-    const group = Math.floor((sideNum + 1) / 2);
-    const side = ((sideNum - 1) % 2) + 1;
-
-    return {
-      page,
-      group,
-      side,
-    };
-  }
-  return null;
-}
-
 export function addInSet(argss: string[], value: any, obj: any): any {
   if (argss.length == 0) {
     return value;
@@ -84,4 +63,14 @@ function isObject(x: any) {
 
 function isNullOrUndefined(x: any) {
   return x == null;
+}
+
+export function objectKeys(obj: any) {
+  var keys = [];
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      keys.push(key);
+    }
+  }
+  return keys;
 }

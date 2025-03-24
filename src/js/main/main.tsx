@@ -25,6 +25,11 @@ const Main = () => {
       console.log(typeof res, res);
     });
   };
+  const portals = () => {
+    evalTS("portalRender").then((res) => {
+      console.log(typeof res, res);
+    });
+  };
   const reset = () => {
     evalTS("appReset").then((res) => {
       console.log(typeof res, res);
@@ -77,6 +82,7 @@ const Main = () => {
 
           <button onClick={serialize}>Serialize</button>
           <button onClick={render}>Render</button>
+          <button onClick={portals}>Portals</button>
           <button onClick={reset}>Reset</button>
           <button onClick={toggleSync}>
             {isSyncEnabled ? "Stop Sync" : "Start Sync"}

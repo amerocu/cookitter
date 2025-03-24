@@ -1,42 +1,6 @@
-import { matchLayer, addInSet, getFromSet, mapp } from "./utils";
+import { addInSet, getFromSet, mapp } from "./utils";
 
 describe("utils", () => {
-  describe("matchLayer", () => {
-    test("empty", () => {
-      expect(matchLayer("")).toEqual(null);
-    });
-    test("no match", () => {
-      expect(matchLayer("hello")).toEqual(null);
-    });
-    test("example 1", () => {
-      expect(matchLayer("CK-10-A")).toEqual({
-        page: 10,
-        group: 1,
-        side: 1,
-      });
-    });
-    test("example 2", () => {
-      expect(matchLayer("ck-20-b")).toEqual({
-        page: 20,
-        group: 1,
-        side: 2,
-      });
-    });
-    test("example 3", () => {
-      expect(matchLayer("ck-30-c")).toEqual({
-        page: 30,
-        group: 2,
-        side: 1,
-      });
-    });
-    test("example 4", () => {
-      expect(matchLayer("ck-40-d")).toEqual({
-        page: 40,
-        group: 2,
-        side: 2,
-      });
-    });
-  });
   describe("addInSet", () => {
     test("add on null", () => {
       expect(addInSet(["hello"], 1, null)).toEqual({
