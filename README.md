@@ -19,7 +19,6 @@ To allow Cookitter to work in your project some preparation is needed:
 ### Important
 
 - feat: reuse portals elements
-- feat: create utility folders
 - fix: adobe complaining when imanges of portals are modified
 
 ### Needed

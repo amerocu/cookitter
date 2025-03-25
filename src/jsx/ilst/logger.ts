@@ -28,10 +28,15 @@ const Logger = function (cfg: LoggerConfig): Logger {
   if (!cfg.enable) {
     return emptyLogger;
   }
+  const logFolderPath = `${Folder.myDocuments}/cookitter/logs`;
+
+  var logFolder = new Folder(logFolderPath);
+  if (!logFolder.exists) {
+    logFolder.create();
+  }
 
   const timestamp = toYMD(new Date());
-  var logFilePath =
-    Folder.myDocuments + `/cookitter/logs/${timestamp}_${cfg.name}.txt`;
+  const logFilePath = `${logFolderPath}/${timestamp}_${cfg.name}.txt`;
 
   $.writeln("Opening log at: " + logFilePath);
   var file: File | null = null;

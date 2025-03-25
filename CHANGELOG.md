@@ -2,6 +2,7 @@
 
 ## Unrelased
 
+- feat: create logs/portals folders if do not exists.
 - feat: simplify UI.
 - fix: crash when layers are not present
 - fix: render crashing on zOrderPosition

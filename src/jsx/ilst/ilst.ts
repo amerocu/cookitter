@@ -615,7 +615,15 @@ function captureAndPlaceImage(
     alert("imageCapture() is not supported in this version of Illustrator.");
     return;
   }
-  const portalFilePath = `${Folder.myDocuments}/cookitter/portals/${id}.png`;
+
+  const portalsFolderPath = `${Folder.myDocuments}/cookitter/portals`;
+
+  var portalsFolder = new Folder(portalsFolderPath);
+  if (!portalsFolder.exists) {
+    portalsFolder.create();
+  }
+
+  const portalFilePath = `${portalsFolder}/${id}.png`;
   l.i(`crating portal file ${portalFilePath}`);
   var tempFile = new File(portalFilePath);
 
