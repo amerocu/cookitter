@@ -19,7 +19,9 @@ To allow Cookitter to work in your project some preparation is needed:
 ### Important
 
 - feat: reuse portals elements
+- feat: crop portals with corresponding imgame path
 - fix: adobe complaining when imanges of portals are modified
+- feat: create layers if not present
 
 ### Needed
 
