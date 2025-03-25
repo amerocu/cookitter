@@ -37,14 +37,9 @@ const Main = () => {
   };
 
   const sync = () => {
-    evalTS("appRender").then((res) => {
+    evalTS("appRender", { doPortals }).then((res) => {
       console.log(typeof res, res);
     });
-    if (doPortals) {
-      evalTS("portalRender").then((res) => {
-        console.log(typeof res, res);
-      });
-    }
   };
 
   // Timer Functions

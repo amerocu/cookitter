@@ -116,7 +116,7 @@ function ss(store: Store) {
 const cookitterTagNameId = "cookitter_id";
 const cookitterTagNameSignature = "cookitter_sign";
 
-export const appRender = () => {
+export function appRender(settings: { doPortals: boolean }) {
   l.i("appReset...");
 
   if (app.documents.length === 0) {
@@ -273,23 +273,79 @@ export const appRender = () => {
 
   l.i("L3 store:");
   l.i(ss(store));
-};
 
-export const portalRender = () => {
-  if (app.documents.length === 0) {
-    l.e("No document open.");
-    return;
+  if (settings.doPortals) {
+    const pLayer: Layer | null = getByNameSafe(doc.layers, pLayerName);
+    if (!pLayer) {
+      l.e("No layer: " + pLayerName);
+      return;
+    }
+    l.i(`found layer ${pLayer.name}`);
+    // const pPathItems = pLayer.pathItems;
+    // TODO delete old portals?
+
+    const mkPortal = (pi: PathItem) => {
+      l.i(`doing: ${pi.name}`);
+      const pathItemRect = pathItemRectangle(pi);
+      const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
+
+      if (sArtboardIdx !== null) {
+        const sArtboard = artBag.artboards[sArtboardIdx];
+
+        l.i(`found in artboard: ${sArtboard.name}`);
+        const lIF = matchArtboard(sArtboard.name);
+        if (lIF) {
+          var dArtboardInfo;
+          if (isLeftFacingSide(lIF.side)) {
+            const pageNum = (Number(lIF.page) + 1).toString();
+            dArtboardInfo = getLeftMostSide(artBag.artMapping, pageNum);
+          } else {
+            const pageNum = (Number(lIF.page) - 1).toString();
+            dArtboardInfo = getRightMostSide(artBag.artMapping, pageNum);
+          }
+
+          if (dArtboardInfo) {
+            const [dGroup, dSide, dArtboardIdx] = dArtboardInfo;
+            const dArtboard: Artboard = artBag.artboards[Number(dArtboardIdx)];
+
+            l.i(`capture artboard: ${dArtboard.name}`);
+            const tag: Tag | null = getByNameSafe(pi.tags, cookitterTagNameId);
+            if (tag) {
+              captureAndPlaceImage(
+                sArtboard,
+                dArtboard,
+                pLayer,
+                pi,
+                `${tag.value}-${lIF.side}`
+              );
+              l.i(
+                `making portal of ${pi.name} from artboard ${sArtboard.name} to ${dArtboard.name}`
+              );
+            } else {
+              l.i(`capture artboard: none`);
+            }
+          } else {
+            l.i(`no destination artboard`);
+          }
+        } else {
+          l.i(`board name invalid artboard: ${sArtboard.name} }`);
+        }
+      }
+    };
+
+    l.i(`loops on sorce items: ${sPathItems.length}`);
+    for (var i = 0; i < sPathItems.length; i++) {
+      const sPi = sPathItems[i];
+      mkPortal(sPi);
+    }
+
+    l.i(`loops on sorce items: ${dPathItems.length}`);
+    for (var i = 0; i < dPathItems.length; i++) {
+      const dPi = dPathItems[i];
+      mkPortal(dPi);
+    }
   }
-
-  const doc: Document | null = app.activeDocument;
-
-  if (!doc) {
-    l.e("No document avaiable");
-    return;
-  }
-  const artBag = mkArtboardsBag(doc);
-  createPortals(artBag);
-};
+}
 
 type ArtboardsBag = {
   artboards: Artboard[];
@@ -365,6 +421,8 @@ function syncItems(artBag: ArtboardsBag, dLayer: Layer, es: ElementStore) {
 
   // we need to recreate the destination item
   if (dPi) {
+    // TODO maybe actually reuse the path item, if just
+    // the position changed?
     dPi.remove();
   }
 
@@ -498,109 +556,6 @@ function newPositionPathItem(
   // pi.left = artbx;
   // pi.top = artby;
 }
-
-export const createPortals = (artBag: ArtboardsBag) => {
-  l.i("creating portals...");
-
-  if (app.documents.length === 0) {
-    l.e("No document open.");
-    return;
-  }
-
-  const doc: Document | null = app.activeDocument;
-
-  if (!doc) {
-    l.e("No document avaiable");
-    return;
-  }
-
-  const sLayer: Layer | null = getByNameSafe(doc.layers, sLayerName);
-
-  if (!sLayer) {
-    l.e("No layer: " + sLayerName);
-    return;
-  }
-  l.i(`found layer ${sLayer.name}`);
-  const sPathItems = sLayer.pathItems;
-
-  const dLayer: Layer | null = getByNameSafe(doc.layers, dLayerName);
-  if (!dLayer) {
-    l.e("No layer: " + dLayerName);
-    return;
-  }
-  l.i(`found layer ${dLayer.name}`);
-  const dPathItems = dLayer.pathItems;
-
-  const pLayer: Layer | null = getByNameSafe(doc.layers, pLayerName);
-  if (!pLayer) {
-    l.e("No layer: " + pLayerName);
-    return;
-  }
-  l.i(`found layer ${pLayer.name}`);
-  // const pPathItems = pLayer.pathItems;
-  // TODO delete old portals?
-
-  const mkPortal = (pi: PathItem) => {
-    l.i(`doing: ${pi.name}`);
-    const pathItemRect = pathItemRectangle(pi);
-    const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
-
-    if (sArtboardIdx !== null) {
-      const sArtboard = artBag.artboards[sArtboardIdx];
-
-      l.i(`found in artboard: ${sArtboard.name}`);
-      const lIF = matchArtboard(sArtboard.name);
-      if (lIF) {
-        var dArtboardInfo;
-        if (isLeftFacingSide(lIF.side)) {
-          const pageNum = (Number(lIF.page) + 1).toString();
-          dArtboardInfo = getLeftMostSide(artBag.artMapping, pageNum);
-        } else {
-          const pageNum = (Number(lIF.page) - 1).toString();
-          dArtboardInfo = getRightMostSide(artBag.artMapping, pageNum);
-        }
-
-        if (dArtboardInfo) {
-          const [dGroup, dSide, dArtboardIdx] = dArtboardInfo;
-          const dArtboard: Artboard = artBag.artboards[Number(dArtboardIdx)];
-
-          l.i(`capture artboard: ${dArtboard.name}`);
-          const tag: Tag | null = getByNameSafe(pi.tags, cookitterTagNameId);
-          if (tag) {
-            captureAndPlaceImage(
-              sArtboard,
-              dArtboard,
-              pLayer,
-              pi,
-              `${tag.value}-${lIF.side}`
-            );
-            l.i(
-              `making portal of ${pi.name} from artboard ${sArtboard.name} to ${dArtboard.name}`
-            );
-          } else {
-            l.i(`capture artboard: none`);
-          }
-        } else {
-          l.i(`no destination artboard`);
-        }
-      } else {
-        l.i(`board name invalid artboard: ${sArtboard.name} }`);
-      }
-    }
-  };
-
-  l.i(`loops on sorce items: ${sPathItems.length}`);
-  for (var i = 0; i < sPathItems.length; i++) {
-    const sPi = sPathItems[i];
-    mkPortal(sPi);
-  }
-
-  l.i(`loops on sorce items: ${dPathItems.length}`);
-  for (var i = 0; i < dPathItems.length; i++) {
-    const dPi = dPathItems[i];
-    mkPortal(dPi);
-  }
-};
 
 function captureAndPlaceImage(
   sArtboard: Artboard,
