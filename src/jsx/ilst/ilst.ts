@@ -1,10 +1,6 @@
 import { addInSet, getFromSet, mapp } from "./utils";
 import { findIntersections, Rectangle } from "./rectangle";
 import {
-  PageNumber,
-  GroupNumber,
-  SideNumber,
-  ArtboardNumber,
   ArtboardsMapping,
   getLeftMostSide,
   getRightMostSide,
@@ -97,7 +93,9 @@ type ElementStore = {
   destination: null | PathItem;
 };
 
-type Store = Record<string, ElementStore>;
+type ElementID = string;
+
+type Store = Record<ElementID, ElementStore>;
 
 // Serialize Store functions
 function ss(store: Store) {
@@ -240,12 +238,9 @@ export function appRender(settings: { doPortals: boolean }) {
           // a source item with the same id of a destination one
           // we should pair them
           es.destination = dPi;
-          // TODO check the diff and update?
 
-          l.i(`L2: syncing items`);
+          l.i(`L2: syncing items: ${key}`);
           syncItems(artBag, dLayer, es);
-
-          delete store[key];
         }
       } else {
         // the destinaiton element has an id, but we did not have a source
@@ -268,7 +263,9 @@ export function appRender(settings: { doPortals: boolean }) {
   // loop over source elements without a destination
   l.i(`L3: loops on source items without a destination`);
   for (var elem in store) {
-    syncItems(artBag, dLayer, store[elem]);
+    if (!store[elem].destination) {
+      syncItems(artBag, dLayer, store[elem]);
+    }
   }
 
   l.i("L3 store:");
@@ -455,16 +452,21 @@ function syncItems(artBag: ArtboardsBag, dLayer: Layer, es: ElementStore) {
       return;
     }
     l.i(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
-    const dPi = sPi.duplicate(dLayer, ElementPlacement.INSIDE);
+    // ElementPlacement.INSIDE is the right value, types are wrong
+    // @ts-ignore
+    const newDPi = sPi.duplicate(dLayer, ElementPlacement.INSIDE);
 
-    dPi.selected = false;
-    dPi.locked = true;
+    newDPi.selected = false;
+    newDPi.locked = true;
 
     // mirror vertically
-    dPi.resize(-100, 100);
+    newDPi.resize(-100, 100);
 
     const newPos = newPositionPathItem(pathItemRect, sArtboard, dArtboard);
-    dPi.position = newPos;
+    newDPi.position = newPos;
+    // the element has all the properties it needs because it has been duplicated
+    // @ts-ignore
+    es.destination = newDPi;
   } else {
     l.i(`board not found, shape ${sPi.name} }`);
   }
@@ -584,8 +586,13 @@ function captureAndPlaceImage(
 
   // Capture the selected portion as an image
   var options = new ImageCaptureOptions();
+  // The object is only used to set these values an pass it to imageCapture
+  // so it seems that types are wrong here.
+  // @ts-ignore
   options.resolution = 150; // Adjust resolution as needed
+  // @ts-ignore
   options.antiAliasing = true;
+  // @ts-ignore
   options.transparency = false;
 
   // Find the capture rectangle
