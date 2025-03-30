@@ -2,6 +2,8 @@
 
 ## Unrelased
 
+- feat: reuse portals elements
+- fix: adobe complaining when imanges of portals are modified
 - feat: create logs/portals folders if do not exists.
 - feat: simplify UI.
 - fix: crash when layers are not present

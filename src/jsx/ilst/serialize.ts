@@ -21,6 +21,7 @@ function serializeLayer(layer: Layer) {
     name: layer.name,
     visible: layer.visible,
     pathItems: mapp(layer.pathItems, serializePathItem),
+    placedItems: mapp(layer.placedItems, serializePlacedItem),
   };
 }
 
@@ -47,6 +48,14 @@ function serializePathItem(pi: PathItem) {
     },
     tags: mapp(pi.tags, serializeTag),
     pathPoints: mapp(pi.pathPoints, serializePathPoint),
+  };
+}
+
+function serializePlacedItem(pi: PlacedItem) {
+  return {
+    name: pi.name,
+    note: pi.note,
+    tags: mapp(pi.tags, serializeTag),
   };
 }
 

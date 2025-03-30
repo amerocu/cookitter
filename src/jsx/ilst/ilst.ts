@@ -1,4 +1,4 @@
-import { addInSet, getFromSet, mapp } from "./utils";
+import { addInSet, getFromSet, mapp, objectLength } from "./utils";
 import { findIntersections, Rectangle } from "./rectangle";
 import {
   ArtboardsMapping,
@@ -90,8 +90,19 @@ function generateID(store: Record<string, any>) {
 
 type ElementStore = {
   source: PathItem;
-  destination: null | PathItem;
+  destination: PathItem | null;
+  sourcePortal: PlacedItem | null;
+  destinationPortal: PlacedItem | null;
 };
+
+function mkElementStore(sPi: PathItem): ElementStore {
+  return {
+    source: sPi,
+    destination: null,
+    sourcePortal: null,
+    destinationPortal: null,
+  };
+}
 
 type ElementID = string;
 
@@ -99,13 +110,23 @@ type Store = Record<ElementID, ElementStore>;
 
 // Serialize Store functions
 function ss(store: Store) {
-  var s: Record<string, { source: string; destination: null | string }> = {};
+  var s: Record<
+    string,
+    {
+      source: string;
+      destination: string | null;
+      sourcePortal: string | null;
+      destinationPortal: string | null;
+    }
+  > = {};
 
   for (const key in store) {
     const val = store[key];
     s[key] = {
       source: val.source?.name,
       destination: val.destination?.name ?? null,
+      sourcePortal: val.sourcePortal?.name ?? null,
+      destinationPortal: val.destinationPortal?.name ?? null,
     };
   }
   return JSON.stringify(s);
@@ -113,6 +134,7 @@ function ss(store: Store) {
 
 const cookitterTagNameId = "cookitter_id";
 const cookitterTagNameSignature = "cookitter_sign";
+const cookitterTagNamePortalType = "cookitter_portal_type";
 
 export function appRender(settings: { doPortals: boolean }) {
   l.i("appReset...");
@@ -173,18 +195,12 @@ export function appRender(settings: { doPortals: boolean }) {
         const newId = generateID(store);
         l.i(`L1: new id ${newId}`);
         tag.value = newId;
-        store[newId] = {
-          source: sPi,
-          destination: null,
-        };
+        store[newId] = mkElementStore(sPi);
       } else {
         // first time we find this tagged element
         // let's add it to the store
         l.i(`L1: adding source item`);
-        store[tag.value] = {
-          source: sPi,
-          destination: null,
-        };
+        store[tag.value] = mkElementStore(sPi);
       }
     } else {
       l.i(`L1: tag not found`);
@@ -194,10 +210,7 @@ export function appRender(settings: { doPortals: boolean }) {
       newTag.name = cookitterTagNameId;
       const newId = generateID(store);
       newTag.value = newId;
-      store[newId] = {
-        source: sPi,
-        destination: null,
-      };
+      store[newId] = mkElementStore(sPi);
     }
   }
 
@@ -208,10 +221,7 @@ export function appRender(settings: { doPortals: boolean }) {
   // We need a temporary copy of the destination elements because
   // we are removing ad adding elements while loooping.
 
-  l.i(`L2: loops on destination items`);
-  if (dPathItems.length == 0) {
-    l.i("L2 no destination items");
-  }
+  l.i(`L2: loops on destination items :${dPathItems.length}`);
   var tmp: PathItem[] = [];
   for (var i = 0; i < dPathItems.length; i++) {
     tmp.push(dPathItems[i]);
@@ -244,15 +254,15 @@ export function appRender(settings: { doPortals: boolean }) {
         }
       } else {
         // the destinaiton element has an id, but we did not have a source
-        // element, the source element has probably being delete.
+        // element, the source element has probably being deleted.
         l.i(`L2: remove destination item: ${dPi.name}`);
         dPi.remove();
       }
     } else {
       // destination element without an id
-      // this is maybe an use element, deleting it is not
-      // polite but what could we do?
-      l.i(`L2: remove destination item: ${dPi.name}`);
+      // this is maybe an user element? deleting it is not
+      // polite but what else could we do?
+      l.e(`L2: remove destination item: ${dPi.name}`);
       dPi.remove();
     }
   }
@@ -271,6 +281,12 @@ export function appRender(settings: { doPortals: boolean }) {
   l.i("L3 store:");
   l.i(ss(store));
 
+  if (!doc.imageCapture) {
+    // TODO make portals not usable is imageCapture is not supported...
+    alert("imageCapture() is not supported in this version of Illustrator.");
+    return;
+  }
+
   if (settings.doPortals) {
     const pLayer: Layer | null = getByNameSafe(doc.layers, pLayerName);
     if (!pLayer) {
@@ -278,71 +294,211 @@ export function appRender(settings: { doPortals: boolean }) {
       return;
     }
     l.i(`found layer ${pLayer.name}`);
-    // const pPathItems = pLayer.pathItems;
-    // TODO delete old portals?
 
-    const mkPortal = (pi: PathItem) => {
-      l.i(`doing: ${pi.name}`);
-      const pathItemRect = pathItemRectangle(pi);
-      const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
+    var pPlacedItems = pLayer.placedItems;
+    var tmp2: PlacedItem[] = [];
+    for (var i = 0; i < pPlacedItems.length; i++) {
+      tmp2.push(pPlacedItems[i]);
+    }
+    l.i(`L4: loops on portals items :${dPathItems.length}`);
+    for (var i = 0; i < tmp2.length; i++) {
+      const pPi = tmp2[i];
 
-      if (sArtboardIdx !== null) {
-        const sArtboard = artBag.artboards[sArtboardIdx];
+      l.i(`L4: found item ${pPi.name}`);
+      const tag: Tag = getByNameSafe(pPi.tags, cookitterTagNameId);
+      if (tag) {
+        l.i(`L2: found tag ${tag?.name}:${tag?.value}`);
+        const key = tag.value;
 
-        l.i(`found in artboard: ${sArtboard.name}`);
-        const lIF = matchArtboard(sArtboard.name);
-        if (lIF) {
-          var dArtboardInfo;
-          if (isLeftFacingSide(lIF.side)) {
-            const pageNum = (Number(lIF.page) + 1).toString();
-            dArtboardInfo = getLeftMostSide(artBag.artMapping, pageNum);
-          } else {
-            const pageNum = (Number(lIF.page) - 1).toString();
-            dArtboardInfo = getRightMostSide(artBag.artMapping, pageNum);
-          }
+        const es = store[key];
+        if (es) {
+          // let's find out which type of porta is this one
 
-          if (dArtboardInfo) {
-            const [dGroup, dSide, dArtboardIdx] = dArtboardInfo;
-            const dArtboard: Artboard = artBag.artboards[Number(dArtboardIdx)];
+          const tag: Tag = getByNameSafe(pPi.tags, cookitterTagNamePortalType);
+          if (tag) {
+            const portalType = tag.value;
 
-            l.i(`capture artboard: ${dArtboard.name}`);
-            const tag: Tag | null = getByNameSafe(pi.tags, cookitterTagNameId);
-            if (tag) {
-              captureAndPlaceImage(
-                sArtboard,
-                dArtboard,
-                pLayer,
-                pi,
-                `${tag.value}-${lIF.side}`
-              );
-              l.i(
-                `making portal of ${pi.name} from artboard ${sArtboard.name} to ${dArtboard.name}`
-              );
+            if (portalType == "source") {
+              es.sourcePortal = pPi;
+            } else if (portalType == "destination") {
+              es.destinationPortal = pPi;
             } else {
-              l.i(`capture artboard: none`);
+              l.i(
+                `L2: portal with invalid portal type: ${pPi.name} ${portalType}`
+              );
+              pPi.remove();
             }
           } else {
-            l.i(`no destination artboard`);
+            // this portal does not have a portal tag type.
+            l.i(`L2: portal without a tag portal type: ${pPi.name}`);
+            pPi.remove();
           }
         } else {
-          l.i(`board name invalid artboard: ${sArtboard.name} }`);
+          // the destinaiton element has an id, but we did not have a source
+          // element, the source element has probably being deleted.
+          l.i(`L2: remove portal item: ${pPi.name}`);
+          pPi.remove();
         }
+      } else {
+        // this is quite odd, all portals shoudl have an id.
+        l.e(`L4: portal without an tag id: ${pPi.name}`);
+        pPi.remove();
       }
-    };
-
-    l.i(`loops on sorce items: ${sPathItems.length}`);
-    for (var i = 0; i < sPathItems.length; i++) {
-      const sPi = sPathItems[i];
-      mkPortal(sPi);
     }
 
-    l.i(`loops on sorce items: ${dPathItems.length}`);
-    for (var i = 0; i < dPathItems.length; i++) {
-      const dPi = dPathItems[i];
-      mkPortal(dPi);
+    l.i("L4 store:");
+    l.i(ss(store));
+
+    l.i(`loops on store items: ${objectLength(store)}`);
+    for (var elem in store) {
+      const sPi = store[elem].source;
+      const sPPi = store[elem].sourcePortal;
+      updatePortal(artBag, pLayer, sPi, sPPi, "source");
+
+      const dPi = store[elem].destination;
+      const dPPi = store[elem].destinationPortal;
+      if (dPi) {
+        updatePortal(artBag, pLayer, dPi, dPPi, "destination");
+      }
     }
   }
+  app.redraw();
 }
+
+const updatePortal = (
+  artBag: ArtboardsBag,
+  pLayer: Layer,
+  sPi: PathItem,
+  dPi: PlacedItem | null,
+  portalType: string
+) => {
+  l.i(`doing: ${sPi.name}`);
+  const pathItemRect = pathItemRectangle(sPi);
+  const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
+
+  if (sArtboardIdx !== null) {
+    const sArtboard = artBag.artboards[sArtboardIdx];
+
+    l.i(`found in artboard: ${sArtboard.name}`);
+    const lIF = matchArtboard(sArtboard.name);
+    if (lIF) {
+      var dArtboardInfo;
+      if (isLeftFacingSide(lIF.side)) {
+        const pageNum = (Number(lIF.page) + 1).toString();
+        dArtboardInfo = getLeftMostSide(artBag.artMapping, pageNum);
+      } else {
+        const pageNum = (Number(lIF.page) - 1).toString();
+        dArtboardInfo = getRightMostSide(artBag.artMapping, pageNum);
+      }
+
+      if (dArtboardInfo) {
+        const [dGroup, dSide, dArtboardIdx] = dArtboardInfo;
+        const cArtboard: Artboard = artBag.artboards[Number(dArtboardIdx)];
+
+        l.i(`capture artboard: ${cArtboard.name}`);
+        const tag: Tag | null = getByNameSafe(sPi.tags, cookitterTagNameId);
+        if (tag) {
+          const id = tag.value;
+          const side = lIF.side;
+
+          const doc = app.activeDocument;
+
+          const portalsFolderPath = `${Folder.myDocuments}/cookitter/portals`;
+
+          const portalsFolder = new Folder(portalsFolderPath);
+          if (!portalsFolder.exists) {
+            portalsFolder.create();
+          }
+
+          const portalFilePath = `${portalsFolder}/${id}-${side}.png`;
+          l.i(`crating portal file ${portalFilePath}`);
+          const tempFile = new File(portalFilePath);
+
+          // Capture the selected portion as an image
+          const options = new ImageCaptureOptions();
+          // The object is only used to set these values an pass it to imageCapture
+          // so it seems that types are wrong here.
+          // @ts-ignore
+          options.resolution = 150; // Adjust resolution as needed
+          // @ts-ignore
+          options.antiAliasing = true;
+          // @ts-ignore
+          options.transparency = false;
+
+          // Find the capture rectangle
+          const deltaLeft = sPi.left - sArtboard.artboardRect[0];
+          const deltaTop = sPi.top - sArtboard.artboardRect[1];
+
+          const targetLeft = cArtboard.artboardRect[0] + deltaLeft;
+          const targetTop = cArtboard.artboardRect[1] + deltaTop;
+
+          const targetRect: [number, number, number, number] = [
+            targetLeft,
+            targetTop,
+            targetLeft + sPi.width,
+            targetTop - sPi.height,
+          ];
+          doc.imageCapture(tempFile, targetRect, options);
+
+          if (!tempFile.exists) {
+            l.e(`Failed to capture image for item: ${id}`);
+            return;
+          }
+
+          l.i(
+            `making portal of ${sPi.name} from artboard ${sArtboard.name} to ${cArtboard.name}`
+          );
+          var placedItem = dPi;
+          if (!placedItem) {
+            l.i("creating a new portal with id: " + id);
+            placedItem = pLayer.placedItems.add();
+            placedItem.file = tempFile;
+            $.sleep(100);
+            placedItem.name = id;
+            placedItem.position = sPi.position;
+            placedItem.width = sPi.width;
+            placedItem.height = sPi.height;
+
+            const newTagId = placedItem.tags.add();
+            newTagId.name = cookitterTagNameId;
+            newTagId.value = id;
+
+            const newTagType = placedItem.tags.add();
+            newTagType.name = cookitterTagNamePortalType;
+            newTagType.value = portalType;
+
+            placedItem.selected = false;
+            app.redraw();
+          } else {
+            l.i(`updating portal file ${portalFilePath}`);
+            placedItem.file = tempFile;
+            placedItem.name = id;
+            placedItem.position = sPi.position;
+            placedItem.width = sPi.width;
+            placedItem.height = sPi.height;
+
+            const newTagId = placedItem.tags.add();
+            newTagId.name = cookitterTagNameId;
+            newTagId.value = id;
+
+            const newTagType = placedItem.tags.add();
+            newTagType.name = cookitterTagNamePortalType;
+            newTagType.value = portalType;
+
+            placedItem.selected = false;
+            app.redraw();
+          }
+        } else {
+          l.e(`trying to portal an item without a tag`);
+        }
+      } else {
+        l.i(`no destination artboard`);
+      }
+    } else {
+      l.i(`invalid artboard name: ${sArtboard.name} }`);
+    }
+  }
+};
 
 type ArtboardsBag = {
   artboards: Artboard[];
@@ -557,78 +713,6 @@ function newPositionPathItem(
   return [artbx, artby];
   // pi.left = artbx;
   // pi.top = artby;
-}
-
-function captureAndPlaceImage(
-  sArtboard: Artboard,
-  cArtboard: Artboard,
-  dLayer: Layer,
-  pi: PathItem,
-  id: string
-) {
-  var doc = app.activeDocument;
-
-  if (!doc.imageCapture) {
-    alert("imageCapture() is not supported in this version of Illustrator.");
-    return;
-  }
-
-  const portalsFolderPath = `${Folder.myDocuments}/cookitter/portals`;
-
-  var portalsFolder = new Folder(portalsFolderPath);
-  if (!portalsFolder.exists) {
-    portalsFolder.create();
-  }
-
-  const portalFilePath = `${portalsFolder}/${id}.png`;
-  l.i(`crating portal file ${portalFilePath}`);
-  var tempFile = new File(portalFilePath);
-
-  // Capture the selected portion as an image
-  var options = new ImageCaptureOptions();
-  // The object is only used to set these values an pass it to imageCapture
-  // so it seems that types are wrong here.
-  // @ts-ignore
-  options.resolution = 150; // Adjust resolution as needed
-  // @ts-ignore
-  options.antiAliasing = true;
-  // @ts-ignore
-  options.transparency = false;
-
-  // Find the capture rectangle
-  const deltaLeft = pi.left - sArtboard.artboardRect[0];
-  const deltaTop = pi.top - sArtboard.artboardRect[1];
-
-  l.i(`deltaLeft ${deltaLeft} deltaTop ${deltaTop}`);
-
-  const targetLeft = cArtboard.artboardRect[0] + deltaLeft;
-  const targetTop = cArtboard.artboardRect[1] + deltaTop;
-  l.i(`targetLeft ${targetLeft} targetTop ${targetTop}`);
-
-  const targetRect: [number, number, number, number] = [
-    targetLeft,
-    targetTop,
-    targetLeft + pi.width,
-    targetTop - pi.height,
-  ];
-
-  l.i(
-    `targetRect ${targetRect[0]},${targetRect[1]},${targetRect[2]},${targetRect[3]}`
-  );
-  doc.imageCapture(tempFile, targetRect, options);
-
-  if (!tempFile.exists) {
-    l.e(`Failed to capture image for item: ${id}`);
-    return;
-  }
-
-  // crate and place portal element
-  var placedItem = dLayer.placedItems.add();
-  placedItem.file = tempFile;
-  placedItem.name = id;
-  placedItem.position = pi.position;
-  placedItem.width = pi.width;
-  placedItem.height = pi.height;
 }
 
 function getByNameSafe(collection: any, name: string): any | null {

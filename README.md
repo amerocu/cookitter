@@ -18,19 +18,19 @@ To allow Cookitter to work in your project some preparation is needed:
 
 ### Important
 
-- feat: reuse portals elements
 - feat: crop portals with corresponding imgame path
-- fix: adobe complaining when imanges of portals are modified
 - feat: create layers if not present
 
 ### Needed
 
+- feat: empty (white) portal for first and last page
 - feat: visual clue of which are the cloned elements and which are the original one
 - feat: show how much it took to render the elements
 - feat: if the user does an undo, pause the sync for 1 second.
 
 ### Useful
 
+- feat: move imageCapture check in the UI and eventually disable the portals feature
 - feat: manage elements that span multiple artbook
 - feat: copy multiple types of elements
 - feat: copy layers and groups three
@@ -44,3 +44,4 @@ To allow Cookitter to work in your project some preparation is needed:
 
 - if a copied item is selected, rerender deselects it
 - re-render pollute the illustrator history
+- portals reuse is not as effective as it seems, because Illustrator kind of recreate the PathIten when the image change.

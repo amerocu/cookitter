@@ -74,3 +74,13 @@ export function objectKeys(obj: any): string[] {
   }
   return keys;
 }
+
+export function objectLength(obj: any): number {
+  var count = 0;
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      count += 1;
+    }
+  }
+  return count;
+}
