@@ -468,7 +468,7 @@ const updatePortal = (
             newTagType.value = portalType;
 
             placedItem.selected = false;
-            app.redraw();
+            placedItem.locked = true;
           } else {
             l.i(`updating portal file ${portalFilePath}`);
             placedItem.file = tempFile;
@@ -486,7 +486,7 @@ const updatePortal = (
             newTagType.value = portalType;
 
             placedItem.selected = false;
-            app.redraw();
+            placedItem.locked = true;
           }
         } else {
           l.e(`trying to portal an item without a tag`);
