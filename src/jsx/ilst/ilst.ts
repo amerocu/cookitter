@@ -14,9 +14,11 @@ export * from "./serialize";
 
 var l = Logger({ name: "main", alsoDebug: true, enable: true });
 
-const sLayerName = "cookie";
-const dLayerName = "cutter";
-const pLayerName = "portals";
+const mLayerName = "cookitter";
+
+const cookitterTagNameId = "cookitter_id";
+const cookitterTagNameHash = "cookitter_hash";
+const cookitterTagNameOrigin = "cookitter_origin"; // user|generated
 
 export const appReset = () => {
   l.i("appReset...");
@@ -31,48 +33,55 @@ export const appReset = () => {
     return;
   }
 
-  var sLayer: Layer | null = getByNameSafe(doc.layers, sLayerName);
+  var mLayer: Layer | null = getByNameSafe(doc.layers, mLayerName);
 
-  if (!sLayer) {
-    l.e("No layer: " + sLayerName);
+  if (!mLayer) {
+    l.e("No layer: " + mLayer);
   } else {
-    const sPathItems = sLayer.pathItems;
-    l.i(`deleting source elements tags...`);
-    for (var i = 0; i < sPathItems.length; i++) {
-      l.i(`deleting tags ${sPathItems[i].name}`);
-      // NOTE this does not work!!
-      // sPathItems[i].tags.removeAll();
-      const tags = sPathItems[i].tags;
-      while (tags.length > 0) {
-        tags[0].remove();
-      }
-    }
-  }
-
-  var dLayer: Layer | null = getByNameSafe(doc.layers, dLayerName);
-
-  if (!dLayer) {
-    l.e("No layer: " + dLayerName);
-  } else {
-    // Delete all items in the layer
-    l.i(`deleting destination elements...`);
-    while (dLayer.pageItems.length > 0) {
-      dLayer.pageItems[0].remove();
-    }
-  }
-
-  var pLayer: Layer | null = getByNameSafe(doc.layers, pLayerName);
-
-  if (!pLayer) {
-    l.e("No layer: " + pLayerName);
-  } else {
-    // Delete all items in the layer
-    l.i(`deleting portals elements...`);
-    while (pLayer.pageItems.length > 0) {
-      pLayer.pageItems[0].remove();
-    }
+    resetPageItems(mLayer);
   }
 };
+
+function resetPageItems(obj: any) {
+  var i = 0;
+  l.i(`resetting object: ${obj.name} ${obj.typename}`);
+  while (obj.pageItems.length > i) {
+    const pageItem = obj.pageItems[i];
+    const origin = getTagValue(pageItem, cookitterTagNameOrigin);
+    const objType = pageItem.typename;
+
+    l.i(`resetting item: ${objType} ${origin}`);
+
+    if (objType == "GroupItem") {
+      if (origin == "generated") {
+        resetPageItems(pageItem);
+        if (obj.pageItems.length == 0) {
+          obj.pageItems[i].remove();
+        } else {
+          i++;
+        }
+      } else {
+      }
+    } else if (objType == "PathItem" || objType == "PlacedItem") {
+      if (origin == "generated") {
+        obj.pageItems[i].remove();
+      } else {
+        resetTags(pageItem);
+        i++;
+      }
+    } else {
+      l.w(`unsupported item type: ${objType}`);
+      i++;
+    }
+  }
+}
+
+function resetTags(obj: any) {
+  const tags = obj.tags;
+  while (tags.length > 0) {
+    tags[0].remove();
+  }
+}
 
 function generateID(store: Record<string, any>) {
   var timestamp = new Date().getTime(); // Get current timestamp
@@ -131,10 +140,6 @@ function ss(store: Store) {
   }
   return JSON.stringify(s);
 }
-
-const cookitterTagNameId = "cookitter_id";
-const cookitterTagNameSignature = "cookitter_sign";
-const cookitterTagNamePortalType = "cookitter_portal_type";
 
 export function appRender(settings: { doPortals: boolean }) {
   l.i("appReset...");
@@ -545,7 +550,7 @@ function syncItems(artBag: ArtboardsBag, dLayer: Layer, es: ElementStore) {
   l.i(`syncing: ${sPi.name}`);
 
   // getting source items signature
-  const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameSignature);
+  const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameHash);
   l.i(`tag: ${tag?.name}`);
   const itemBlob = JSON.stringify(serializePathItem(sPi));
   l.i(`item: ${itemBlob}`);
@@ -568,7 +573,7 @@ function syncItems(artBag: ArtboardsBag, dLayer: Layer, es: ElementStore) {
     l.i(`added missing signature`);
     // no signatue, let's create it
     const newTag = sPi.tags.add();
-    newTag.name = cookitterTagNameSignature;
+    newTag.name = cookitterTagNameHash;
     newTag.value = newSignature;
   }
 
@@ -719,6 +724,16 @@ function getByNameSafe(collection: any, name: string): any | null {
   for (var i = 0; i < collection.length; i++) {
     if (collection[i].name === name) {
       return collection[i];
+    }
+  }
+  return null;
+}
+
+function getTagValue(object: any, name: string): string | null {
+  let collection = object.tags;
+  for (var i = 0; i < collection.length; i++) {
+    if (collection[i].name === name) {
+      return collection[i].value;
     }
   }
   return null;
