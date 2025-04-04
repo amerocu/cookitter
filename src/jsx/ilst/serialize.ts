@@ -16,12 +16,43 @@ export const serializeApp = () => {
   };
 };
 
-function serializeLayer(layer: Layer) {
+function serializeLayer(l: Layer) {
   return {
-    name: layer.name,
-    visible: layer.visible,
-    pathItems: mapp(layer.pathItems, serializePathItem),
-    placedItems: mapp(layer.placedItems, serializePlacedItem),
+    name: l.name,
+    visible: l.visible,
+    locked: l.locked,
+    opacity: l.opacity,
+    preview: l.preview,
+    printable: l.printable,
+    sliced: l.sliced,
+    typename: l.typename,
+    layers: mapp(l.layers, serializeLayer),
+    pathItems: mapp(l.pathItems, serializePathItem),
+    placedItems: mapp(l.placedItems, serializePlacedItem),
+    groupItems: mapp(l.groupItems, serializeGroupItem),
+    pageItems: mapp(l.pageItems, serializePageItem),
+  };
+}
+
+function serializeGroupItem(g: GroupItem) {
+  return {
+    name: g.name,
+    clipped: g.clipped,
+    editable: g.editable,
+    locked: g.locked,
+    typename: g.typename,
+
+    pathItems: mapp(g.pathItems, serializePathItem),
+    placedItems: mapp(g.placedItems, serializePlacedItem),
+    groupItems: mapp(g.groupItems, serializeGroupItem),
+    pageItems: mapp(g.pageItems, serializePageItem),
+  };
+}
+
+function serializePageItem(i: PageItem) {
+  return {
+    name: i.name,
+    typename: i.typename,
   };
 }
 
