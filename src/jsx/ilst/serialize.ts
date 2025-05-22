@@ -67,6 +67,8 @@ function serializePathItem(pi: PathItem) {
     top: pi.top,
     locked: pi.locked,
     selected: pi.selected,
+    sliced: pi.sliced,
+    clipping: pi.clipping,
     stroked: pi.stroked,
     stroke: {
       // strokeColor: pi.strokeColor,
@@ -86,6 +88,11 @@ function serializePlacedItem(pi: PlacedItem) {
   return {
     name: pi.name,
     note: pi.note,
+    editable: pi.editable,
+    locked: pi.locked,
+    file: pi.file?.absoluteURI,
+    selected: pi.selected,
+    sliced: pi.sliced,
     tags: mapp(pi.tags, serializeTag),
   };
 }

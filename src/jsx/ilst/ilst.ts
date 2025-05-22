@@ -7,6 +7,7 @@ import {
   matchArtboard,
   oppositeSide,
   isLeftFacingSide,
+  AtrboardName,
 } from "./artboard.utils";
 import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
 import Logger from "./logger";
@@ -15,12 +16,75 @@ export * from "./serialize";
 var l = Logger({ name: "main", alsoDebug: true, enable: true });
 
 const mLayerName = "cookitter";
+const sLayerName = "cookie";
+const dLayerName = "cutter";
+const pLayerName = "portals";
+const cookitterTagNamePortalType = "cookitter_portal_type";
 
 const cookitterTagNameId = "cookitter_id";
 const cookitterTagNameHash = "cookitter_hash";
-const cookitterTagNameOrigin = "cookitter_origin"; // user|generated
+const cookitterTagNameOrigin = "cookitter_origin"; // user|cookie
+
+const cookitterTagNameOriginUser = "user";
+const cookitterTagNameOriginCookitter = "cookie";
 
 export const appReset = () => {
+  l.i("appReset...");
+  if (app.documents.length === 0) {
+    l.e("No document open.");
+    return;
+  }
+  const doc: Document | null = app.activeDocument;
+
+  if (!doc) {
+    l.e("No document avaiable");
+    return;
+  }
+
+  var sLayer: Layer | null = getByNameSafe(doc.layers, sLayerName);
+
+  if (!sLayer) {
+    l.e("No layer: " + sLayerName);
+  } else {
+    const sPathItems = sLayer.pathItems;
+    l.i(`deleting source elements tags...`);
+    for (var i = 0; i < sPathItems.length; i++) {
+      l.i(`deleting tags ${sPathItems[i].name}`);
+      // NOTE this does not work!!
+      // sPathItems[i].tags.removeAll();
+      const tags = sPathItems[i].tags;
+      while (tags.length > 0) {
+        tags[0].remove();
+      }
+    }
+  }
+
+  var dLayer: Layer | null = getByNameSafe(doc.layers, dLayerName);
+
+  if (!dLayer) {
+    l.e("No layer: " + dLayerName);
+  } else {
+    // Delete all items in the layer
+    l.i(`deleting destination elements...`);
+    while (dLayer.pageItems.length > 0) {
+      dLayer.pageItems[0].remove();
+    }
+  }
+
+  var pLayer: Layer | null = getByNameSafe(doc.layers, pLayerName);
+
+  if (!pLayer) {
+    l.e("No layer: " + pLayerName);
+  } else {
+    // Delete all items in the layer
+    l.i(`deleting portals elements...`);
+    while (pLayer.pageItems.length > 0) {
+      pLayer.pageItems[0].remove();
+    }
+  }
+};
+
+export const newReset = () => {
   l.i("appReset...");
   if (app.documents.length === 0) {
     l.e("No document open.");
@@ -42,6 +106,13 @@ export const appReset = () => {
   }
 };
 
+// ResetPageItems accepts an Ai object that has a list of items `pageItems`, a Layer or a GroupItem.
+// It traverses then
+// - GroupItem
+// Deletes all
+// - PathItem
+// - PlacedItems
+// that have been generated, and removes tags to all user items.
 function resetPageItems(obj: any) {
   var i = 0;
   l.i(`resetting object: ${obj.name} ${obj.typename}`);
@@ -53,7 +124,7 @@ function resetPageItems(obj: any) {
     l.i(`resetting item: ${objType} ${origin}`);
 
     if (objType == "GroupItem") {
-      if (origin == "generated") {
+      if (origin == "cookie") {
         resetPageItems(pageItem);
         if (obj.pageItems.length == 0) {
           obj.pageItems[i].remove();
@@ -63,10 +134,10 @@ function resetPageItems(obj: any) {
       } else {
       }
     } else if (objType == "PathItem" || objType == "PlacedItem") {
-      if (origin == "generated") {
+      if (origin == "cookie") {
         obj.pageItems[i].remove();
       } else {
-        resetTags(pageItem);
+        resetItemTags(pageItem);
         i++;
       }
     } else {
@@ -76,7 +147,7 @@ function resetPageItems(obj: any) {
   }
 }
 
-function resetTags(obj: any) {
+function resetItemTags(obj: any) {
   const tags = obj.tags;
   while (tags.length > 0) {
     tags[0].remove();
@@ -94,6 +165,172 @@ function generateID(store: Record<string, any>) {
     return generateID(store);
   } else {
     return uniqueID;
+  }
+}
+
+export function newRender() {
+  l.i("appRender...");
+
+  if (app.documents.length === 0) {
+    l.e("No document open.");
+    return;
+  }
+
+  const doc: Document | null = app.activeDocument;
+
+  if (!doc) {
+    l.e("No document avaiable");
+    return;
+  }
+
+  var mLayer: Layer | null = getByNameSafe(doc.layers, mLayerName);
+
+  if (!mLayer) {
+    l.e("No layer: " + mLayerName);
+    return;
+  }
+
+  const artBag = mkArtboardsBag(doc);
+  l.i(`artboards bag mapping: ` + JSON.stringify(artBag.artMapping));
+
+  const mPageItems = mLayer.pageItems;
+
+  // looping through a temp list becasue doRender can change
+  // the list of elements.
+  var tmp: PageItem[] = [];
+  for (var i = 0; i < mPageItems.length; i++) {
+    tmp.push(mPageItems[i]);
+  }
+  for (var i = 0; i < tmp.length; i++) {
+    const sPi = tmp[i];
+    doRender(sPi, artBag);
+  }
+}
+
+// doRender does the rendering on any object on this class
+// - GroupItem
+// - PathItem
+// - PlacedItems
+// this method can delete the given object, so watch out!!
+function doRender(obj: any, artBag: ArtboardsBag) {
+  const objType = obj.typename;
+  const origin = getTagValue(obj, cookitterTagNameOrigin);
+
+  switch (objType) {
+    case "GroupItem":
+      switch (origin) {
+        case "cookie":
+          // if it's a cookie group it should contain:
+          // - PathItem
+          // - Portal
+          // - the group should be a clipping group.
+          doRenderGroupItem(obj, artBag);
+          break;
+        case null:
+          // this should be a user group!
+          setTagValue(obj, cookitterTagNameOrigin, cookitterTagNameOriginUser);
+          l.i(`tagging object origin to: user`);
+        // | follow bellow...
+        case "user":
+          // user group is just visited recursively
+          doRender(obj, artBag);
+          break;
+        default:
+          l.e(`Sorry, unhandled origin: ${objType}`);
+      }
+      break;
+    case "PathItem":
+      switch (origin) {
+        case "cookie":
+          // the path item should have been in a group so why is it here?
+          // let's delete it.
+          obj.remove();
+          break;
+        case null:
+          // this is a new item, should be tagged, moved in a group, and rendered.
+          setTagValue(obj, cookitterTagNameOrigin, cookitterTagNameOriginUser);
+          break;
+        case "user":
+          // the path item should have been in a cookitter group so why is it here?
+          // let's move it in a group and render the group.
+
+          const group = makeCookitterGroup(obj);
+          doRender(group, artBag);
+          break;
+        default:
+          l.e(`Sorry, unhandled origin: ${objType}`);
+      }
+      break;
+    case "PlacedItem":
+      // we should never find PlacedItems outside their group, why is it here?
+      // let's delete it.
+      obj.remove();
+      break;
+    default:
+      l.e(`Sorry, unhandled typename: ${objType}`);
+  }
+}
+
+function makeCookitterGroup(obj: any): Group {
+  const group = obj.parent.groupItems.add();
+
+  setTagValue(group, cookitterTagNameOrigin, cookitterTagNameOriginCookitter);
+  group.clipped = true;
+  group.name = "CookitterClipGroup";
+  obj.parent = group;
+
+  return group;
+}
+
+function makeCookitterGroupUser(obj: any) {
+  setTagValue(obj, cookitterTagNameOrigin, cookitterTagNameOriginUser);
+  if (obj.name == "CookitterClipGroup") {
+    obj.name = "UserGroup";
+  }
+
+  // delete al cookitter PlacedItems if present.
+  var i = 0;
+  while (obj.placedItems.length > i) {
+    const pi = obj.placedItems[i];
+    if (
+      getTagValue(pi, cookitterTagNameOrigin) == cookitterTagNameOriginCookitter
+    ) {
+      pi.remove();
+    } else {
+      i++;
+    }
+  }
+}
+
+// doRenderGroupItem does the rendering inside a cookitter group
+function doRenderGroupItem(obj: any, artBag: ArtboardsBag) {
+  switch (obj.pathItems.length) {
+    case 0:
+      // an empty cookitter group does not make sense..
+      // if it's completely empyt let's delete it otherwise it's a user group.
+      if (obj.pageItems.length == 0) {
+      } else {
+        obj.remove();
+      }
+    case 1:
+    // 1 is the perfect number of path items.
+    // TODO
+    default:
+      // we have more than 1 path items, no good..
+      // every path item should be in his own cookitter group.
+      // let's move every path item in a new group an tag this one as a user group.
+
+      // looping through a temp list because the list will change
+      var tmp: PageItem[] = [];
+      for (var i = 0; i < obj.pathItems.length; i++) {
+        tmp.push(obj.pathItems[i]);
+      }
+      for (var i = 0; i < tmp.length; i++) {
+        const pi = tmp[i];
+        const group = makeCookitterGroup(pi);
+        doRenderGroupItem(group, artBag);
+      }
+      makeCookitterGroupUser(obj);
   }
 }
 
@@ -142,7 +379,7 @@ function ss(store: Store) {
 }
 
 export function appRender(settings: { doPortals: boolean }) {
-  l.i("appReset...");
+  l.i("appRender...");
 
   if (app.documents.length === 0) {
     l.e("No document open.");
@@ -737,4 +974,12 @@ function getTagValue(object: any, name: string): string | null {
     }
   }
   return null;
+}
+
+function setTagValue(object: any, name: string, value: string): Tag {
+  // TODO do we need to loop and find if the tag is already set?
+  const newTag = object.tags.add();
+  newTag.name = name;
+  newTag.value = value;
+  return newTag;
 }
