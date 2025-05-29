@@ -31,13 +31,18 @@ const Main = () => {
   };
 
   const reset = () => {
-    evalTS("appReset").then((res) => {
+    evalTS("appReset2").then((res) => {
       console.log(typeof res, res);
     });
   };
 
   const sync = () => {
     evalTS("appRender", { doPortals }).then((res) => {
+      console.log(typeof res, res);
+    });
+  };
+  const sync2 = () => {
+    evalTS("appRender2", { doPortals }).then((res) => {
       console.log(typeof res, res);
     });
   };
@@ -85,6 +90,9 @@ const Main = () => {
       <div className="top-row">
         <button className="button" onClick={sync}>
           Sync
+        </button>
+        <button className="button" onClick={sync2}>
+          Sync2
         </button>
         <button
           className={`toggle-button ${isSyncEnabled ? "active" : ""}`}

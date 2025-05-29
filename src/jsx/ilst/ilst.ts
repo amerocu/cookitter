@@ -23,10 +23,14 @@ const cookitterTagNamePortalType = "cookitter_portal_type";
 
 const cookitterTagNameId = "cookitter_id";
 const cookitterTagNameHash = "cookitter_hash";
-const cookitterTagNameOrigin = "cookitter_origin"; // user|cookie
-
-const cookitterTagNameOriginUser = "user";
-const cookitterTagNameOriginCookitter = "cookie";
+const cookitterTagNameOrigin = "cookitter_origin"; // user|cookie-main|cookie-clip
+// Cookitter Tag Name Origin Values
+const ctno = {
+  usr: "user",
+  pi: "cookie",
+  gmain: "cookie-group-main",
+  gclip: "cookie-group-clip",
+};
 
 export const appReset = () => {
   l.i("appReset...");
@@ -84,7 +88,7 @@ export const appReset = () => {
   }
 };
 
-export const newReset = () => {
+export const appReset2 = () => {
   l.i("appReset...");
   if (app.documents.length === 0) {
     l.e("No document open.");
@@ -154,10 +158,16 @@ function resetItemTags(obj: any) {
   }
 }
 
-function generateID(store: Record<string, any>) {
+function createID() {
   var timestamp = new Date().getTime(); // Get current timestamp
   var randomNum = Math.floor(Math.random() * 1e9); // Generate a random number
   var uniqueID = "id-" + timestamp.toString(16) + "-" + randomNum.toString(16);
+
+  return uniqueID;
+}
+
+function generateID(store: Record<string, any>) {
+  var uniqueID = createID();
 
   // checks that the id is unique in the store.
   if (store[uniqueID]) {
@@ -168,8 +178,8 @@ function generateID(store: Record<string, any>) {
   }
 }
 
-export function newRender() {
-  l.i("appRender...");
+export function appRender2(settings: { doPortals: boolean }) {
+  l.i("appRender2...");
 
   if (app.documents.length === 0) {
     l.e("No document open.");
@@ -203,7 +213,7 @@ export function newRender() {
   }
   for (var i = 0; i < tmp.length; i++) {
     const sPi = tmp[i];
-    doRender(sPi, artBag);
+    doRender(sPi, artBag, settings.doPortals);
   }
 }
 
@@ -212,28 +222,27 @@ export function newRender() {
 // - PathItem
 // - PlacedItems
 // this method can delete the given object, so watch out!!
-function doRender(obj: any, artBag: ArtboardsBag) {
+function doRender(obj: any, artBag: ArtboardsBag, doPortals: boolean) {
+  l.i("doRender...");
   const objType = obj.typename;
   const origin = getTagValue(obj, cookitterTagNameOrigin);
 
   switch (objType) {
     case "GroupItem":
       switch (origin) {
-        case "cookie":
-          // if it's a cookie group it should contain:
-          // - PathItem
-          // - Portal
-          // - the group should be a clipping group.
-          doRenderGroupItem(obj, artBag);
+        case ctno.gmain:
+          // if it's a cookie main group it should contain
+          // clipping groups
+          doRenderMainGroupItem(obj, artBag, doPortals);
+          break;
+        case ctno.gclip:
+          // if it's a cookie clipping group and it should
+          // belong to a main group, delete it...
+          doDeleteClippingGroupItem(obj);
           break;
         case null:
-          // this should be a user group!
-          setTagValue(obj, cookitterTagNameOrigin, cookitterTagNameOriginUser);
-          l.i(`tagging object origin to: user`);
-        // | follow bellow...
-        case "user":
           // user group is just visited recursively
-          doRender(obj, artBag);
+          doRender(obj, artBag, doPortals);
           break;
         default:
           l.e(`Sorry, unhandled origin: ${objType}`);
@@ -247,15 +256,11 @@ function doRender(obj: any, artBag: ArtboardsBag) {
           obj.remove();
           break;
         case null:
-          // this is a new item, should be tagged, moved in a group, and rendered.
-          setTagValue(obj, cookitterTagNameOrigin, cookitterTagNameOriginUser);
-          break;
-        case "user":
           // the path item should have been in a cookitter group so why is it here?
           // let's move it in a group and render the group.
 
-          const group = makeCookitterGroup(obj);
-          doRender(group, artBag);
+          const group = makeCookitterMainGroup(obj);
+          doRenderMainGroupItem(group, artBag, doPortals);
           break;
         default:
           l.e(`Sorry, unhandled origin: ${objType}`);
@@ -271,75 +276,168 @@ function doRender(obj: any, artBag: ArtboardsBag) {
   }
 }
 
-function makeCookitterGroup(obj: any): Group {
-  const group = obj.parent.groupItems.add();
+function makeCookitterMainGroup(obj: any): Group {
+  l.i("makeCookitterMainGroup...");
+  const mainGroup = obj.parent.groupItems.add();
+  setTagValue(mainGroup, cookitterTagNameOrigin, ctno.gmain);
+  mainGroup.name = "CookitterMainGroup";
 
-  setTagValue(group, cookitterTagNameOrigin, cookitterTagNameOriginCookitter);
-  group.clipped = true;
-  group.name = "CookitterClipGroup";
-  obj.parent = group;
+  const clipGroup = mainGroup.groupItems.add();
+  setTagValue(clipGroup, cookitterTagNameOrigin, ctno.gclip);
+  clipGroup.name = "CookitterClipGroup";
 
-  return group;
+  // ElementPlacement.INSIDE is the right value, types are wrong
+  // @ts-ignore
+  obj.move(clipGroup, ElementPlacement.PLACEATBEGINNING);
+
+  return mainGroup;
 }
 
-function makeCookitterGroupUser(obj: any) {
-  setTagValue(obj, cookitterTagNameOrigin, cookitterTagNameOriginUser);
+// we have found a cookitter group that it's in the wrong place
+// if the group containg only generated items we should delete it
+// but if it contains a user PathItem, we should make the maing group.
+function doDeleteClippingGroupItem(obj: any) {
+  removeTag(obj, cookitterTagNameOrigin);
   if (obj.name == "CookitterClipGroup") {
     obj.name = "UserGroup";
   }
 
-  // delete al cookitter PlacedItems if present.
-  var i = 0;
-  while (obj.placedItems.length > i) {
-    const pi = obj.placedItems[i];
-    if (
-      getTagValue(pi, cookitterTagNameOrigin) == cookitterTagNameOriginCookitter
-    ) {
-      pi.remove();
-    } else {
-      i++;
-    }
-  }
+  // TODO
+}
+
+type ElementGroup = {
+  mainGroup: GroupItem;
+
+  sourceGroup: GroupItem | null;
+  source: PathItem | null;
+  sourcePortal: PlacedItem | null;
+
+  destinationGroup: GroupItem | null;
+  destination: PathItem | null;
+  destinationPortal: PlacedItem | null;
+};
+
+function mkGroupElement(obj: GroupItem): ElementGroup {
+  return {
+    mainGroup: obj,
+    sourceGroup: null,
+    source: null,
+    sourcePortal: null,
+    destinationGroup: null,
+    destination: null,
+    destinationPortal: null,
+  };
 }
 
 // doRenderGroupItem does the rendering inside a cookitter group
-function doRenderGroupItem(obj: any, artBag: ArtboardsBag) {
-  switch (obj.pathItems.length) {
-    case 0:
-      // an empty cookitter group does not make sense..
-      // if it's completely empyt let's delete it otherwise it's a user group.
-      if (obj.pageItems.length == 0) {
-      } else {
-        obj.remove();
-      }
-    case 1:
-    // 1 is the perfect number of path items.
-    // TODO
-    default:
-      // we have more than 1 path items, no good..
-      // every path item should be in his own cookitter group.
-      // let's move every path item in a new group an tag this one as a user group.
+function doRenderMainGroupItem(
+  obj: any,
+  artBag: ArtboardsBag,
+  doPortals: boolean
+) {
+  l.i("doRenderMainGroupItem...");
+  const eg: ElementGroup = mkGroupElement(obj);
 
-      // looping through a temp list because the list will change
-      var tmp: PageItem[] = [];
-      for (var i = 0; i < obj.pathItems.length; i++) {
-        tmp.push(obj.pathItems[i]);
+  // TODO check 1 or 2 groups exists
+  for (var i = 0; i < obj.groupItems.length; i++) {
+    const group = obj.groupItems[i];
+
+    const origin = getTagValue(group, cookitterTagNameOrigin);
+
+    if (origin == ctno.gclip) {
+      let type = null;
+
+      if (group.pathItems.length == 1) {
+        const pi: PathItem = group.pathItems[0];
+        const piOrigin = getTagValue(pi, cookitterTagNameOrigin);
+
+        l.i(`found piOrigin: ${piOrigin}`);
+        if (!piOrigin) {
+          eg.sourceGroup = group;
+          eg.source = pi;
+          type = "source";
+        } else if (piOrigin == ctno.pi) {
+          eg.destinationGroup = group;
+          eg.destination = pi;
+          type = "destination";
+        }
+      } else {
+        // TODO hanle error...
+        l.e("todo a");
+        return 1;
       }
-      for (var i = 0; i < tmp.length; i++) {
-        const pi = tmp[i];
-        const group = makeCookitterGroup(pi);
-        doRenderGroupItem(group, artBag);
+      l.i(`found type: ${type}`);
+      if (type) {
+        if (group.placedItems.length == 1) {
+          const pi: PlacedItem = group.placedItems[0];
+
+          if (type == "source") {
+            eg.sourcePortal = pi;
+          } else {
+            // (type == "destination"
+            eg.destinationPortal = pi;
+          }
+        } else {
+          l.i("no portal found");
+        }
+      } else {
+        // TODO hanlde error...
+        l.e("todo c");
+        return 1;
       }
-      makeCookitterGroupUser(obj);
+    } else {
+      // TODO error...
+      l.e("todo d");
+      return 1;
+    }
+  }
+
+  if (!eg.source || !eg.sourceGroup) {
+    // this should not happen...
+    return;
+  }
+
+  l.i(sss(eg));
+
+  // At this poing we should have a valid GroupElement object.
+
+  syncItems2(artBag, eg);
+  if (doPortals) {
+    updatePortals2(artBag, eg);
   }
 }
 
 type ElementStore = {
   source: PathItem;
   destination: PathItem | null;
+
   sourcePortal: PlacedItem | null;
   destinationPortal: PlacedItem | null;
 };
+
+// Serialize Store functions
+function sss(val: ElementGroup) {
+  var s: {
+    source: string | null;
+    sourcePortal: string | null;
+    sourceGroup: string | null;
+
+    destination: string | null;
+    destinationPortal: string | null;
+    destinationGroup: string | null;
+  };
+
+  s = {
+    source: val.source?.name ?? null,
+    sourcePortal: val.sourcePortal?.name ?? null,
+    sourceGroup: val.sourceGroup?.name ?? null,
+    destination: val.destination?.name ?? null,
+    destinationPortal: val.destinationPortal?.name ?? null,
+    destinationGroup: val.destinationGroup?.name ?? null,
+  };
+
+  return JSON.stringify(s);
+}
 
 function mkElementStore(sPi: PathItem): ElementStore {
   return {
@@ -742,6 +840,144 @@ const updatePortal = (
   }
 };
 
+function updatePortals2(artBag: ArtboardsBag, eg: ElementGroup) {
+  if (eg.sourceGroup && eg.source) {
+    updatePortal2(artBag, eg.sourceGroup, eg.source, eg.sourcePortal);
+  }
+  if (eg.destinationGroup && eg.destination) {
+    updatePortal2(
+      artBag,
+      eg.destinationGroup,
+      eg.destination,
+      eg.destinationPortal
+    );
+  }
+}
+
+const updatePortal2 = (
+  artBag: ArtboardsBag,
+  groupItem: GroupItem,
+  pathItem: PathItem,
+  placedItem: PlacedItem | null
+) => {
+  l.i(`doing: ${pathItem.name}`);
+  const pathItemRect = pathItemRectangle(pathItem);
+  const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
+
+  if (sArtboardIdx !== null) {
+    const sArtboard = artBag.artboards[sArtboardIdx];
+
+    l.i(`found in artboard: ${sArtboard.name}`);
+    const lIF = matchArtboard(sArtboard.name);
+    if (lIF) {
+      var dArtboardInfo;
+      if (isLeftFacingSide(lIF.side)) {
+        const pageNum = (Number(lIF.page) + 1).toString();
+        dArtboardInfo = getLeftMostSide(artBag.artMapping, pageNum);
+      } else {
+        const pageNum = (Number(lIF.page) - 1).toString();
+        dArtboardInfo = getRightMostSide(artBag.artMapping, pageNum);
+      }
+
+      if (dArtboardInfo) {
+        const [dGroup, dSide, dArtboardIdx] = dArtboardInfo;
+        const cArtboard: Artboard = artBag.artboards[Number(dArtboardIdx)];
+
+        l.i(`capture artboard: ${cArtboard.name}`);
+        const id: string = getTagId(pathItem);
+
+        const side = lIF.side;
+
+        const doc = app.activeDocument;
+
+        const portalsFolderPath = `${Folder.myDocuments}/cookitter/portals`;
+
+        const portalsFolder = new Folder(portalsFolderPath);
+        if (!portalsFolder.exists) {
+          portalsFolder.create();
+        }
+
+        const portalFilePath = `${portalsFolder}/${id}-${side}.png`;
+        l.i(`crating portal file ${portalFilePath}`);
+        const tempFile = new File(portalFilePath);
+
+        // Capture the selected portion as an image
+        const options = new ImageCaptureOptions();
+        // The object is only used to set these values an pass it to imageCapture
+        // so it seems that types are wrong here.
+        // @ts-ignore
+        options.resolution = 150; // Adjust resolution as needed
+        // @ts-ignore
+        options.antiAliasing = true;
+        // @ts-ignore
+        options.transparency = false;
+
+        // Find the capture rectangle
+        const deltaLeft = pathItem.left - sArtboard.artboardRect[0];
+        const deltaTop = pathItem.top - sArtboard.artboardRect[1];
+
+        const targetLeft = cArtboard.artboardRect[0] + deltaLeft;
+        const targetTop = cArtboard.artboardRect[1] + deltaTop;
+
+        const targetRect: [number, number, number, number] = [
+          targetLeft,
+          targetTop,
+          targetLeft + pathItem.width,
+          targetTop - pathItem.height,
+        ];
+        doc.imageCapture(tempFile, targetRect, options);
+
+        if (!tempFile.exists) {
+          l.e(`Failed to capture image for item: ${id}`);
+          return;
+        }
+
+        l.i(
+          `making portal of ${pathItem.name} from artboard ${sArtboard.name} to ${cArtboard.name}`
+        );
+        var placedItem: PlacedItem | null = placedItem;
+        if (!placedItem) {
+          l.i("creating a new portal with id: " + id);
+          placedItem = groupItem.placedItems.add();
+          placedItem.file = tempFile;
+          $.sleep(100);
+          placedItem.name = id;
+          placedItem.position = pathItem.position;
+          placedItem.width = pathItem.width;
+          placedItem.height = pathItem.height;
+
+          setTagValue(placedItem, cookitterTagNameOrigin, ctno.pi);
+
+          placedItem.selected = false;
+          placedItem.locked = true;
+        } else {
+          l.i(`updating portal file ${portalFilePath}`);
+          placedItem.file = tempFile;
+          placedItem.name = id;
+          placedItem.position = pathItem.position;
+          placedItem.width = pathItem.width;
+          placedItem.height = pathItem.height;
+
+          setTagValue(placedItem, cookitterTagNameOrigin, ctno.pi);
+
+          placedItem.selected = false;
+          placedItem.locked = true;
+        }
+
+        // ElementPlacement.INSIDE is the right value, types are wrong
+        // @ts-ignore
+        placedItem.move(groupItem, ElementPlacement.PLACEATEND);
+        groupItem.clipped = true;
+        pathItem.clipping = true;
+      } else {
+        l.i(`no destination artboard`);
+      }
+    } else {
+      l.i(`invalid artboard name: ${sArtboard.name} }`);
+    }
+  }
+};
+
 type ArtboardsBag = {
   artboards: Artboard[];
   artMap: Record<string, Artboard>;
@@ -870,6 +1106,106 @@ function syncItems(artBag: ArtboardsBag, dLayer: Layer, es: ElementStore) {
   }
 }
 
+function syncItems2(artBag: ArtboardsBag, eg: ElementGroup) {
+  if (!eg.source) {
+    return;
+  }
+  const sPi = eg.source;
+  const dPi = eg.destination;
+  l.i(`syncing: ${sPi.name}`);
+
+  // getting source items signature
+  const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameHash);
+  l.i(`tag: ${tag?.name}`);
+  const itemBlob = JSON.stringify(serializePathItem(sPi));
+  // l.i(`item: ${itemBlob}`);
+  const newSignature: string = hashString(itemBlob);
+  l.i(`new signature ${newSignature}`);
+  if (tag) {
+    l.i(`old signature ${tag?.value}`);
+    if (tag?.value == newSignature) {
+      // the item has not changed
+      // so we can return
+      l.i(`no change`);
+      return;
+    } else {
+      tag.value = newSignature;
+      // the item has changed we
+      // must recreate it
+      // TODO try update only changed properties?
+    }
+  } else {
+    l.i(`added missing signature`);
+    // no signatue, let's create it
+    const newTag = sPi.tags.add();
+    newTag.name = cookitterTagNameHash;
+    newTag.value = newSignature;
+  }
+
+  // we need to recreate the destination item
+  if (dPi) {
+    // TODO maybe actually reuse the path item, if just
+    // the position changed?
+    dPi.remove();
+  }
+
+  // create destination item
+  const pathItemRect = pathItemRectangle(sPi);
+  // the path item is missing
+  l.i(`searcing sha: ${sPi.name} ${pathItemRect} ${artBag.artRectangle}`);
+
+  const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
+  l.i(`found ${sArtboardIdx}`);
+
+  if (sArtboardIdx !== null) {
+    const sArtboard = artBag.artboards[sArtboardIdx];
+
+    const lIF = matchArtboard(sArtboard.name);
+    if (!lIF) {
+      l.i(`board name invalid  artboard: ${sArtboard.name} }`);
+      return;
+    }
+
+    const newSide = oppositeSide(lIF.side);
+
+    const dArtboardIdx = getFromSet(
+      [lIF.page, lIF.group, newSide],
+      artBag.artMapping
+    );
+    const dArtboard = artBag.artboards[dArtboardIdx];
+    if (!dArtboard) {
+      l.i(`board name without pair: ${sArtboard.name} }`);
+      return;
+    }
+    l.i(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
+
+    if (!eg.destinationGroup) {
+      const clipGroup = eg.mainGroup.groupItems.add();
+      setTagValue(clipGroup, cookitterTagNameOrigin, ctno.gclip);
+      clipGroup.name = "CookitterClipGroup";
+      eg.destinationGroup = clipGroup;
+    }
+
+    // ElementPlacement.INSIDE is the right value, types are wrong
+    // @ts-ignore
+    const newDPi = sPi.duplicate(eg.destinationGroup, ElementPlacement.INSIDE);
+
+    newDPi.selected = false;
+    newDPi.locked = true;
+
+    // mirror vertically
+    newDPi.resize(-100, 100);
+
+    const newPos = newPositionPathItem(pathItemRect, sArtboard, dArtboard);
+    newDPi.position = newPos;
+    // the element has all the properties it needs because it has been duplicated
+    // @ts-ignore
+    eg.destination = newDPi;
+  } else {
+    l.i(`board not found, shape ${sPi.name} }`);
+  }
+}
+
 function serializePathItem(pi: PathItem) {
   return {
     // the commented properties are not considered as change
@@ -976,10 +1312,33 @@ function getTagValue(object: any, name: string): string | null {
   return null;
 }
 
+function getTagId(object: any): string {
+  let id = getTagValue(object, cookitterTagNameId);
+
+  if (id) {
+    return id;
+  } else {
+    id = createID();
+    const tag = object.tags.add();
+    tag.name = cookitterTagNameId;
+    tag.value = id;
+    return id;
+  }
+}
+
 function setTagValue(object: any, name: string, value: string): Tag {
   // TODO do we need to loop and find if the tag is already set?
   const newTag = object.tags.add();
   newTag.name = name;
   newTag.value = value;
   return newTag;
+}
+
+function removeTag(object: any, name: string) {
+  for (var i = object.tags.length - 1; i >= 0; i--) {
+    var tag = object.tags[i];
+    if (tag.name === name) {
+      tag.remove();
+    }
+  }
 }
