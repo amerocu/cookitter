@@ -42,6 +42,7 @@ function serializeGroupItem(g: GroupItem) {
     locked: g.locked,
     typename: g.typename,
 
+    tags: mapp(g.tags, serializeTag),
     pathItems: mapp(g.pathItems, serializePathItem),
     placedItems: mapp(g.placedItems, serializePlacedItem),
     groupItems: mapp(g.groupItems, serializeGroupItem),

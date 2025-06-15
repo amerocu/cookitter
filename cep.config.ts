@@ -29,8 +29,8 @@ const config: CEP_Config = {
   iconDarkNormalRollOver: "./src/assets/light-icon.png",
   iconNormalRollOver: "./src/assets/dark-icon.png",
   parameters: ["--v=0", "--enable-nodejs", "--mixed-context"],
-  width: 500,
-  height: 550,
+  width: 350,
+  height: 200,
 
   panels: [
     {

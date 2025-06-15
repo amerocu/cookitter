@@ -363,6 +363,108 @@ function doRenderMainGroupItem(
   }
 }
 
+function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
+  if (!eg.source) {
+    return;
+  }
+  const sPi = eg.source;
+  const dPi = eg.destination;
+  l.i(`syncing: ${sPi.name}`);
+
+  // getting source items signature
+  const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameHash);
+  l.i(`tag: ${tag?.name}`);
+  const itemBlob = JSON.stringify(serializePathItem(sPi));
+  // l.i(`item: ${itemBlob}`);
+  const newSignature: string = hashString(itemBlob);
+  l.i(`new signature ${newSignature}`);
+  if (tag) {
+    l.i(`old signature ${tag?.value}`);
+    if (tag?.value == newSignature) {
+      // the item has not changed
+      // so we can return
+      l.i(`no change`);
+      return;
+    } else {
+      tag.value = newSignature;
+      // the item has changed we
+      // must recreate it
+      // TODO try update only changed properties?
+    }
+  } else {
+    l.i(`added missing signature`);
+    // no signatue, let's create it
+    const newTag = sPi.tags.add();
+    newTag.name = cookitterTagNameHash;
+    newTag.value = newSignature;
+  }
+
+  // we need to recreate the destination item
+  if (dPi) {
+    // TODO maybe actually reuse the path item, if just
+    // the position changed?
+    dPi.remove();
+  }
+
+  // create destination item
+  const pathItemRect = pathItemRectangle(sPi);
+  // the path item is missing
+  l.i(`searcing sha: ${sPi.name} ${pathItemRect} ${artBag.artRectangle}`);
+
+  const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
+  l.i(`found ${sArtboardIdx}`);
+
+  if (sArtboardIdx !== null) {
+    const sArtboard = artBag.artboards[sArtboardIdx];
+
+    const lIF = matchArtboard(sArtboard.name);
+    if (!lIF) {
+      l.i(`board name invalid  artboard: ${sArtboard.name} }`);
+      return;
+    }
+
+    const newSide = oppositeSide(lIF.side);
+
+    const dArtboardIdx = getFromSet(
+      [lIF.page, lIF.group, newSide],
+      artBag.artMapping
+    );
+    const dArtboard = artBag.artboards[dArtboardIdx];
+    if (!dArtboard) {
+      l.i(`board name without pair: ${sArtboard.name} }`);
+      return;
+    }
+    l.i(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
+
+    if (!eg.destinationGroup) {
+      const clipGroup = eg.mainGroup.groupItems.add();
+      setTagValue(clipGroup, cookitterTagNameOrigin, ctno.gclip);
+      clipGroup.name = "CookitterClipGroup";
+      eg.destinationGroup = clipGroup;
+    }
+
+    // ElementPlacement.INSIDE is the right value, types are wrong
+    // @ts-ignore
+    const newDPi = sPi.duplicate(eg.destinationGroup, ElementPlacement.INSIDE);
+
+    newDPi.selected = false;
+    newDPi.locked = true;
+
+    // mirror vertically
+    newDPi.resize(-100, 100);
+
+    const newPos = newPositionPathItem(pathItemRect, sArtboard, dArtboard);
+    newDPi.position = newPos;
+    setTagValue(newDPi, cookitterTagNameOrigin, ctno.pi);
+
+    // the element has all the properties it needs because it has been duplicated
+    // @ts-ignore
+    eg.destination = newDPi;
+  } else {
+    l.i(`board not found, shape ${sPi.name} }`);
+  }
+}
+
 function updatePortals(artBag: ArtboardsBag, eg: ElementGroup) {
   if (eg.sourceGroup && eg.source) {
     updatePortal(artBag, eg.sourceGroup, eg.source, eg.sourcePortal);
@@ -383,7 +485,7 @@ const updatePortal = (
   pathItem: PathItem,
   placedItem: PlacedItem | null
 ) => {
-  l.i(`doing: ${pathItem.name}`);
+  l.i(`updatePortal: ${pathItem.name}`);
   const pathItemRect = pathItemRectangle(pathItem);
   const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
 
@@ -540,105 +642,9 @@ function mkArtboardsBag(doc: Document): ArtboardsBag {
   };
 }
 
-function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
-  if (!eg.source) {
-    return;
-  }
-  const sPi = eg.source;
-  const dPi = eg.destination;
-  l.i(`syncing: ${sPi.name}`);
-
-  // getting source items signature
-  const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameHash);
-  l.i(`tag: ${tag?.name}`);
-  const itemBlob = JSON.stringify(serializePathItem(sPi));
-  // l.i(`item: ${itemBlob}`);
-  const newSignature: string = hashString(itemBlob);
-  l.i(`new signature ${newSignature}`);
-  if (tag) {
-    l.i(`old signature ${tag?.value}`);
-    if (tag?.value == newSignature) {
-      // the item has not changed
-      // so we can return
-      l.i(`no change`);
-      return;
-    } else {
-      tag.value = newSignature;
-      // the item has changed we
-      // must recreate it
-      // TODO try update only changed properties?
-    }
-  } else {
-    l.i(`added missing signature`);
-    // no signatue, let's create it
-    const newTag = sPi.tags.add();
-    newTag.name = cookitterTagNameHash;
-    newTag.value = newSignature;
-  }
-
-  // we need to recreate the destination item
-  if (dPi) {
-    // TODO maybe actually reuse the path item, if just
-    // the position changed?
-    dPi.remove();
-  }
-
-  // create destination item
-  const pathItemRect = pathItemRectangle(sPi);
-  // the path item is missing
-  l.i(`searcing sha: ${sPi.name} ${pathItemRect} ${artBag.artRectangle}`);
-
-  const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
-  l.i(`found ${sArtboardIdx}`);
-
-  if (sArtboardIdx !== null) {
-    const sArtboard = artBag.artboards[sArtboardIdx];
-
-    const lIF = matchArtboard(sArtboard.name);
-    if (!lIF) {
-      l.i(`board name invalid  artboard: ${sArtboard.name} }`);
-      return;
-    }
-
-    const newSide = oppositeSide(lIF.side);
-
-    const dArtboardIdx = getFromSet(
-      [lIF.page, lIF.group, newSide],
-      artBag.artMapping
-    );
-    const dArtboard = artBag.artboards[dArtboardIdx];
-    if (!dArtboard) {
-      l.i(`board name without pair: ${sArtboard.name} }`);
-      return;
-    }
-    l.i(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
-
-    if (!eg.destinationGroup) {
-      const clipGroup = eg.mainGroup.groupItems.add();
-      setTagValue(clipGroup, cookitterTagNameOrigin, ctno.gclip);
-      clipGroup.name = "CookitterClipGroup";
-      eg.destinationGroup = clipGroup;
-    }
-
-    // ElementPlacement.INSIDE is the right value, types are wrong
-    // @ts-ignore
-    const newDPi = sPi.duplicate(eg.destinationGroup, ElementPlacement.INSIDE);
-
-    newDPi.selected = false;
-    newDPi.locked = true;
-
-    // mirror vertically
-    newDPi.resize(-100, 100);
-
-    const newPos = newPositionPathItem(pathItemRect, sArtboard, dArtboard);
-    newDPi.position = newPos;
-    // the element has all the properties it needs because it has been duplicated
-    // @ts-ignore
-    eg.destination = newDPi;
-  } else {
-    l.i(`board not found, shape ${sPi.name} }`);
-  }
-}
+// Hashing utils
+// we have a dedicated serialization for fingerprinting than our main
+// serialize lib
 
 function serializePathItem(pi: PathItem) {
   return {
@@ -726,6 +732,8 @@ function newPositionPathItem(
   // pi.left = artbx;
   // pi.top = artby;
 }
+
+// Tags functions
 
 function getByNameSafe(collection: any, name: string): any | null {
   for (var i = 0; i < collection.length; i++) {
