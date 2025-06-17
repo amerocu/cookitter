@@ -2,6 +2,7 @@
 
 ## Unrelased
 
+- chore: update README
 - feat: create layers if not present
 - feat: empty (white) portal for first and last page
 - feat: visual clue of which are the cloned elements and which are the original one
