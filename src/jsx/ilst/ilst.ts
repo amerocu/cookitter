@@ -126,13 +126,6 @@ function resetPageItems(obj: Layer | GroupItem, parent: Layer | GroupItem) {
   }
 }
 
-function resetItemTags(obj: any) {
-  const tags = obj.tags;
-  while (tags.length > 0) {
-    tags[0].remove();
-  }
-}
-
 function createID() {
   var timestamp = new Date().getTime(); // Get current timestamp
   var randomNum = Math.floor(Math.random() * 1e9); // Generate a random number
@@ -159,8 +152,9 @@ export function appRender(settings: { doPortals: boolean }) {
   var mLayer: Layer | null = getByNameSafe(doc.layers, mLayerName);
 
   if (!mLayer) {
-    l.e("No layer: " + mLayerName);
-    return;
+    l.e("No main layer, addding it...");
+    mLayer = doc.layers.add();
+    mLayer.name = mLayerName;
   }
 
   const artBag = mkArtboardsBag(doc);

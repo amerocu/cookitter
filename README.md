@@ -18,8 +18,6 @@ To allow Cookitter to work in your project some preparation is needed:
 
 ### Important
 
-- feat: create layers if not present
-
 ### Needed
 
 - feat: show how much it took to render the elements
@@ -38,6 +36,7 @@ To allow Cookitter to work in your project some preparation is needed:
 
 - feat: PathItems outiline is hidden when used in a clipping group
 - feat: warning if artboard names are not consistent, like missing pages or missing sides.
+- feat: render portals in inverted order on odd pages, this will allow to see through multiple pages with only one render.
 
 ## Known Bugs
 
