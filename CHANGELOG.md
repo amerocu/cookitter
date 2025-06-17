@@ -2,6 +2,7 @@
 
 ## Unrelased
 
+- feat: empty (white) portal for first and last page
 - feat: visual clue of which are the cloned elements and which are the original one
 - fix: update destination element if not present even if signature does not change
 - feat: crop portals with corresponding imgame path

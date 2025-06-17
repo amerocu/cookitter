@@ -658,6 +658,17 @@ const updatePortal = (
         pathItem.clipping = true;
       } else {
         l.i(`no destination artboard`);
+        // NOTE we assume that if no destination artboard is present
+        // the PathItem is facing outside the book from an inner side
+        // of the last or the first page.
+        // With this assumption we can fill the path item white.
+
+        const newRGBColor = new RGBColor();
+        newRGBColor.red = 255;
+        newRGBColor.green = 255;
+        newRGBColor.blue = 255;
+        pathItem.fillColor = newRGBColor;
+        pathItem.filled = true;
       }
     } else {
       l.i(`invalid artboard name: ${sArtboard.name} }`);
@@ -713,9 +724,9 @@ function serializePathItem(pi: PathItem) {
     // the commented properties are not considered as change
     area: pi.area,
     controlBounds: pi.controlBounds,
-    // TODO fillColor:
-    filled: pi.filled,
-    fillOverprint: pi.fillOverprint,
+    // fillColor:
+    // filled: pi.filled,
+    // fillOverprint: pi.fillOverprint,
     geometricBounds: pi.geometricBounds,
     guides: pi.guides,
     height: pi.height,

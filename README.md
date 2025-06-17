@@ -22,7 +22,6 @@ To allow Cookitter to work in your project some preparation is needed:
 
 ### Needed
 
-- feat: empty (white) portal for first and last page
 - feat: show how much it took to render the elements
 - feat: if the user does an undo, pause the sync for 1 second
 
@@ -38,6 +37,7 @@ To allow Cookitter to work in your project some preparation is needed:
   number: 9024
 
 - feat: PathItems outiline is hidden when used in a clipping group
+- feat: warning if artboard names are not consistent, like missing pages or missing sides.
 
 ## Known Bugs
 
