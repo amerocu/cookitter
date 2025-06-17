@@ -49,6 +49,10 @@ export function getFromSet(argss: string[], obj: any): any {
   }
 }
 
+export function startsWith(match: string, str: string | null): boolean {
+  return str?.substr(0, match.length) === match;
+}
+
 export function mapp(data: any, f: any) {
   var tmp = [];
   for (var i = 0; i < data.length; i++) {

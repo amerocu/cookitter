@@ -2,6 +2,9 @@
 
 ## Unrelased
 
+- feat: visual clue of which are the cloned elements and which are the original one
+- fix: update destination element if not present even if signature does not change
+- feat: crop portals with corresponding imgame path
 - feat: reuse portals elements
 - fix: adobe complaining when imanges of portals are modified
 - feat: create logs/portals folders if do not exists.

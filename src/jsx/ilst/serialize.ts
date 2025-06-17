@@ -81,6 +81,7 @@ function serializePathItem(pi: PathItem) {
       strokeWidth: pi.strokeWidth,
     },
     tags: mapp(pi.tags, serializeTag),
+    filled: pi.filled,
     pathPoints: mapp(pi.pathPoints, serializePathPoint),
   };
 }

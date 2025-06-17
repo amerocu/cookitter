@@ -1,4 +1,4 @@
-import { addInSet, getFromSet, mapp } from "./utils";
+import { addInSet, getFromSet, mapp, startsWith } from "./utils";
 
 describe("utils", () => {
   describe("addInSet", () => {
@@ -21,6 +21,17 @@ describe("utils", () => {
       expect(addInSet(["hello", "world"], 1, { hello: { human: 2 } })).toEqual({
         hello: { world: 1, human: 2 },
       });
+    });
+  });
+  describe("startsWith", () => {
+    test("null string", () => {
+      expect(startsWith("whatever", null)).toEqual(false);
+    });
+    test("match", () => {
+      expect(startsWith("cookie-", "cookie-hello")).toEqual(true);
+    });
+    test("no match", () => {
+      expect(startsWith("cookie-", "hola")).toEqual(false);
     });
   });
   describe("getFromSet", () => {
