@@ -2,6 +2,7 @@
 
 ## Unrelased
 
+- chore: simplify UI
 - chore: update README
 - feat: create layers if not present
 - feat: empty (white) portal for first and last page

@@ -22,28 +22,9 @@
   border-radius: 3px;
 }
 
-.toggle-button {
-  background: #777;
-  border: none;
-  color: white;
-  text-align: center;
-  cursor: pointer;
-  width: 25px;
-  border-radius: 3px;
-}
-
-.reset-button {
-  background: #777;
-  border: none;
-  color: white;
-  text-align: center;
-  cursor: pointer;
-  width: 25px;
-  border-radius: 3px;
-}
-
-.toggle-button.active {
-  background: #0a84ff;
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .messages {
@@ -63,6 +44,10 @@
 
 .message.warning {
   color: #ffa500;
+}
+
+.message.info {
+  color: #63ebac;
 }
 
 .message.error {

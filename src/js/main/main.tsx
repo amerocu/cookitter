@@ -1,13 +1,5 @@
-import { useEffect, useState } from "react";
-import { os, path } from "../lib/cep/node";
-import { objectKeys } from "../../jsx/ilst/utils";
-import {
-  csi,
-  evalES,
-  evalFile,
-  openLinkInBrowser,
-  evalTS,
-} from "../lib/utils/bolt";
+import { useState } from "react";
+import { openLinkInBrowser, evalTS } from "../lib/utils/bolt";
 
 import "../style.css";
 
@@ -19,10 +11,8 @@ const speedLevels: Record<string, number> = {
 };
 
 const Main = () => {
-  const [isSyncEnabled, setIsSyncEnabled] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [doPortals, setDoPortals] = useState<boolean>(false);
-  const [refreshSpeed, setRefreshSpeed] = useState<string>("slow");
-  const [timerId, setTimerId] = useState<NodeJS.Timer | null>(null);
 
   const serialize = () => {
     evalTS("serializeApp").then((res) => {
@@ -37,60 +27,20 @@ const Main = () => {
   };
 
   const sync = () => {
+    setIsSyncing(true);
     evalTS("appRender", { doPortals }).then((res) => {
+      setIsSyncing(false);
       console.log(typeof res, res);
     });
   };
 
-  // Timer Functions
-  const startSync = () => {
-    if (!isSyncEnabled) {
-      const intervalms = speedLevels[refreshSpeed];
-      const id = setInterval(sync, intervalms);
-      setTimerId(id);
-      setIsSyncEnabled(true);
-    }
-  };
-
-  const stopSync = () => {
-    if (timerId) {
-      clearInterval(timerId);
-      setTimerId(null);
-    }
-    setIsSyncEnabled(false);
-  };
-
-  const toggleSync = () => {
-    if (isSyncEnabled) {
-      stopSync();
-    } else {
-      startSync();
-    }
-  };
-
-  useEffect(() => {
-    if (isSyncEnabled) {
-      stopSync();
-      startSync();
-    }
-  }, [refreshSpeed]);
-
-  const messages = [
-    { type: "warning", text: "Potential issue detected." },
-    { type: "error", text: "Sync failed!" },
-  ];
+  const messages = [{ type: "info", text: "No messages." }];
 
   return (
     <div className="panel">
       <div className="top-row">
-        <button className="button" onClick={sync}>
-          Sync
-        </button>
-        <button
-          className={`toggle-button ${isSyncEnabled ? "active" : ""}`}
-          onClick={toggleSync}
-        >
-          🔄
+        <button className="button" onClick={sync} disabled={isSyncing}>
+          {isSyncing ? "Syncing..." : "Sync"}
         </button>
         <label>
           Portals
@@ -100,27 +50,19 @@ const Main = () => {
             onChange={() => setDoPortals(!doPortals)}
           />
         </label>
-        <select
-          value={refreshSpeed}
-          onChange={(e) => setRefreshSpeed(e.target.value)}
-        >
-          <option value="slower">Slower</option>
-          <option value="slow">Slow</option>
-          <option value="fast">Fast</option>
-          <option value="fastest">Fastest</option>
-        </select>
-        <button className="toggle-button" onClick={reset}>
-          🚫
+        <button className="button" onClick={reset}>
+          Reset
         </button>
       </div>
       {/* Message List */}
-      <div className="messages">
+      {/* <div className="messages">
         {messages.map((msg, index) => (
           <div key={index} className={`message ${msg.type}`}>
-            {msg.type === "warning" ? "⚠️" : "❌"} {msg.text}
+            {msg.type === "warning" ? "⚠️" : msg.type === "info" ? "ℹ️" : "❌"}{" "}
+            {msg.text}
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* Footer Row */}
       <div className="bottom-row">
