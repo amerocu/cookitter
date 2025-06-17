@@ -7,7 +7,6 @@ import {
   matchArtboard,
   oppositeSide,
   isLeftFacingSide,
-  AtrboardName,
 } from "./artboard.utils";
 import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
 import Logger from "./logger";

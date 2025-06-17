@@ -37,13 +37,13 @@ export type ArtboardsMapping = Record<
   Record<GroupNumber, Record<SideNumber, ArtboardNumber>>
 >;
 
-export type AtrboardName = {
+export type ArtboardName = {
   page: PageNumber;
   group: GroupNumber;
   side: SideNumber;
 };
 
-export function matchArtboard(name: string): AtrboardName | null {
+export function matchArtboard(name: string): ArtboardName | null {
   const regex = /[cC][kK]-(\d+)-([a-zA-Z])/;
   const res = regex.exec(name);
 
