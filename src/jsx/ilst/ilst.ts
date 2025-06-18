@@ -111,6 +111,13 @@ function resetPageItems(obj: Layer | GroupItem, parent: Layer | GroupItem) {
       if (!origin) {
         // this is a user element, nothing to do.
         l.i(`found user ${objType}`);
+
+        if (objType == "PathItem") {
+          // we just checked that the element is a PathItem
+          // @ts-ignore
+          const pathItem: PathItem = pageItem;
+          pathItem.filled = false;
+        }
       } else if (startsWithCookie(origin)) {
         // this is cookietter element, just nuke it!!
         l.i(`found cookitter ${objType}, deleting...`);
