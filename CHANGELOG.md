@@ -2,6 +2,7 @@
 
 ## Unrelased
 
+- feat: show how much it took to render the elements
 - chore: simplify UI
 - chore: update README
 - feat: create layers if not present

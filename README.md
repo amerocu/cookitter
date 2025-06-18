@@ -18,7 +18,6 @@ To allow Cookitter to work in your project some preparation is needed:
 
 ### Needed
 
-- feat: show how much it took to render the elements
 - feat: if the user does an undo, pause the sync for 1 second
 
 ### Useful
