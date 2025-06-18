@@ -18,8 +18,6 @@ To allow Cookitter to work in your project some preparation is needed:
 
 ### Needed
 
-- feat: if the user does an undo, pause the sync for 1 second
-
 ### Useful
 
 - feat: move imageCapture check in the UI and eventually disable the portals feature
@@ -34,6 +32,7 @@ To allow Cookitter to work in your project some preparation is needed:
 - feat: PathItems outiline is hidden when used in a clipping group
 - feat: warning if artboard names are not consistent, like missing pages or missing sides.
 - feat: render portals in inverted order on odd pages, this will allow to see through multiple pages with only one render.
+- feat: if the user does an undo, pause the sync for 1 second
 
 ## Known Bugs
 

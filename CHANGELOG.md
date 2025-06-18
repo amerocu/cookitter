@@ -2,6 +2,7 @@
 
 ## Unrelased
 
+- fix: preserve strok while generating portals
 - fix: reset restore PathItems filled property
 - feat: show how much it took to render the elements
 - chore: simplify UI

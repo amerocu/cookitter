@@ -320,6 +320,30 @@ function seg(val: ElementGroup) {
   return JSON.stringify(s);
 }
 
+let rgbRed: RGBColor = (() => {
+  const newRGBColor = new RGBColor();
+  newRGBColor.red = 255;
+  newRGBColor.green = 0;
+  newRGBColor.blue = 0;
+  return newRGBColor;
+})();
+
+let rgbBlue: RGBColor = (() => {
+  const newRGBColor = new RGBColor();
+  newRGBColor.red = 0;
+  newRGBColor.green = 0;
+  newRGBColor.blue = 255;
+  return newRGBColor;
+})();
+
+let rgbWhite: RGBColor = (() => {
+  const newRGBColor = new RGBColor();
+  newRGBColor.red = 255;
+  newRGBColor.green = 255;
+  newRGBColor.blue = 255;
+  return newRGBColor;
+})();
+
 // doRenderGroupItem does the rendering inside a cookitter group
 function doRenderMainGroupItem(
   obj: any,
@@ -407,13 +431,10 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
   l.i(`syncing: ${sPi.name}`);
 
   // sync canonic style
-  const newRGBColor = new RGBColor();
-  newRGBColor.red = 255;
-  newRGBColor.green = 0;
-  newRGBColor.blue = 0;
-  sPi.strokeColor = newRGBColor;
+  sPi.strokeColor = rgbRed;
+  sPi.strokeWidth = 1;
+  sPi.stroked = true;
   sPi.filled = false;
-  // stroked
 
   // getting source items signature
   const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameHash);
@@ -499,11 +520,9 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
     newDPi.selected = false;
     newDPi.locked = true;
 
-    const newRGBColor = new RGBColor();
-    newRGBColor.red = 0;
-    newRGBColor.green = 0;
-    newRGBColor.blue = 255;
-    newDPi.strokeColor = newRGBColor;
+    newDPi.strokeColor = rgbBlue;
+    newDPi.strokeWidth = 1;
+    newDPi.stroked = true;
 
     // mirror vertically
     newDPi.resize(-100, 100);
@@ -522,14 +541,15 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
 
 function updatePortals(artBag: ArtboardsBag, eg: ElementGroup) {
   if (eg.sourceGroup && eg.source) {
-    updatePortal(artBag, eg.sourceGroup, eg.source, eg.sourcePortal);
+    updatePortal(artBag, eg.sourceGroup, eg.source, eg.sourcePortal, "source");
   }
   if (eg.destinationGroup && eg.destination) {
     updatePortal(
       artBag,
       eg.destinationGroup,
       eg.destination,
-      eg.destinationPortal
+      eg.destinationPortal,
+      "destination"
     );
   }
 }
@@ -538,7 +558,8 @@ const updatePortal = (
   artBag: ArtboardsBag,
   groupItem: GroupItem,
   pathItem: PathItem,
-  placedItem: PlacedItem | null
+  placedItem: PlacedItem | null,
+  type: "source" | "destination"
 ) => {
   l.i(`updatePortal: ${pathItem.name}`);
   const pathItemRect = pathItemRectangle(pathItem);
@@ -619,56 +640,53 @@ const updatePortal = (
         if (!placedItem) {
           l.i("creating a new portal with id: " + id);
           placedItem = groupItem.placedItems.add();
-          placedItem.file = tempFile;
-          $.sleep(100);
-          placedItem.name = id;
-          placedItem.position = pathItem.position;
-          placedItem.width = pathItem.width;
-          placedItem.height = pathItem.height;
-
-          setTagValue(
-            placedItem,
-            cookitterTagNameOrigin,
-            ctno.placedItemCookie
-          );
-
-          placedItem.selected = false;
-          placedItem.locked = true;
-        } else {
-          l.i(`updating portal file ${portalFilePath}`);
-          placedItem.file = tempFile;
-          placedItem.name = id;
-          placedItem.position = pathItem.position;
-          placedItem.width = pathItem.width;
-          placedItem.height = pathItem.height;
-
-          setTagValue(
-            placedItem,
-            cookitterTagNameOrigin,
-            ctno.placedItemCookie
-          );
-
-          placedItem.selected = false;
-          placedItem.locked = true;
         }
+        l.i(`updating portal file ${portalFilePath}`);
+        // Updatdint the file propery resets the whole PalcedItem
+        // so we must set all the properties again.
+        placedItem.file = tempFile;
+        placedItem.name = id;
+        placedItem.position = pathItem.position;
+        placedItem.width = pathItem.width;
+        placedItem.height = pathItem.height;
 
+        placedItem.selected = false;
+
+        setTagValue(placedItem, cookitterTagNameOrigin, ctno.placedItemCookie);
         // ElementPlacement.INSIDE is the right value, types are wrong
         // @ts-ignore
         placedItem.move(groupItem, ElementPlacement.PLACEATEND);
         groupItem.clipped = true;
         pathItem.clipping = true;
+        // clipping resets stroke properties
+        // so we must set them again.
+        switch (type) {
+          case "source":
+            pathItem.strokeColor = rgbRed;
+            break;
+          case "destination":
+            pathItem.strokeColor = rgbBlue;
+            break;
+        }
+        pathItem.strokeWidth = 3;
+        pathItem.stroked = true;
       } else {
         l.i(`no destination artboard`);
         // NOTE we assume that if no destination artboard is present
         // the PathItem is facing outside the book from an inner side
         // of the last or the first page.
         // With this assumption we can fill the path item white.
-
-        const newRGBColor = new RGBColor();
-        newRGBColor.red = 255;
-        newRGBColor.green = 255;
-        newRGBColor.blue = 255;
-        pathItem.fillColor = newRGBColor;
+        switch (type) {
+          case "source":
+            pathItem.strokeColor = rgbRed;
+            break;
+          case "destination":
+            pathItem.strokeColor = rgbBlue;
+            break;
+        }
+        pathItem.strokeWidth = 3;
+        pathItem.stroked = true;
+        pathItem.fillColor = rgbWhite;
         pathItem.filled = true;
       }
     } else {
