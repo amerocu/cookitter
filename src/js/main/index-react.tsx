@@ -5,7 +5,7 @@ import Main from "./main";
 
 initBolt();
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(
   <React.StrictMode>
     <Main />
   </React.StrictMode>

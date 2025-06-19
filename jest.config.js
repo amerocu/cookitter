@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   preset: "ts-jest", // Tells Jest to use ts-jest for TypeScript
   testEnvironment: "node", // Use "jsdom" if testing browser-related code
   transform: {

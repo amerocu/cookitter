@@ -11,17 +11,7 @@ const config: CEP_Config = {
   startingDebugPort: 8860,
   extensionManifestVersion: 6.0,
   requiredRuntimeVersion: 9.0,
-  hosts: [
-    { name: "AEFT", version: "[0.0,99.9]" },
-    { name: "AME", version: "[0.0,99.9]" },
-    { name: "AUDT", version: "[0.0,99.9]" },
-    { name: "FLPR", version: "[0.0,99.9]" },
-    { name: "IDSN", version: "[0.0,99.9]" },
-    { name: "ILST", version: "[0.0,99.9]" },
-    { name: "KBRG", version: "[0.0,99.9]" },
-    { name: "PHXS", version: "[0.0,99.9]" },
-    { name: "PPRO", version: "[0.0,99.9]" },
-  ],
+  hosts: [{ name: "ILST", version: "[0.0,99.9]" }],
 
   type: "Panel",
   iconDarkNormal: "./src/assets/light-icon.png",
@@ -38,6 +28,8 @@ const config: CEP_Config = {
       name: "main",
       panelDisplayName: "Cookitter",
       autoVisible: true,
+      width: 600,
+      height: 650,
     },
   ],
   build: {
@@ -47,9 +39,13 @@ const config: CEP_Config = {
   zxp: {
     country: "US",
     province: "CA",
-    org: "MyCompany",
-    password: "mypassword",
-    tsa: "http://timestamp.digicert.com/",
+    org: "Company",
+    password: "password",
+    tsa: [
+      "http://timestamp.digicert.com/", // Windows Only
+      "http://timestamp.apple.com/ts01", // MacOS Only
+    ],
+    allowSkipTSA: false,
     sourceMap: false,
     jsxBin: "off",
   },
