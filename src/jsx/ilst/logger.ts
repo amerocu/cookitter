@@ -1,27 +1,37 @@
 type LoggerConfig = {
   name: string;
   enable: boolean;
-  alsoDebug: boolean;
+  logLevel: LogLevel;
 };
 
 type Logger = {
-  l: (level: string, msg: string) => void;
-  i: (msg: string) => void;
-  w: (msg: string) => void;
-  e: (msg: string) => void;
+  l: (level: LogLevel, msg: Message) => void;
+  i: (msg: Message) => void;
+  w: (msg: Message) => void;
+  e: (msg: Message) => void;
   setFilePath: (path: string) => void;
 };
+
+type Message = string | (() => string);
+
+enum LogLevel {
+  ERROR = 0,
+  WARN = 1, 
+  INFO = 2,
+  DEBUG = 3
+};
+
 
 function toYMD(d: Date) {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}`;
 }
 
 const emptyLogger: Logger = {
-  l: (level: string, msg: string) => {},
-  i: (msg: string) => {},
-  w: (msg: string) => {},
-  e: (msg: string) => {},
-  setFilePath: (path: string) => {},
+  l: (level: LogLevel, msg: Message) => {},
+  i: (msg: Message) => {},
+  w: (msg: Message) => {},
+  e: (msg: Message) => {},
+  setFilePath: (path: Message) => {},
 };
 
 const Logger = function (cfg: LoggerConfig): Logger {
@@ -49,13 +59,24 @@ const Logger = function (cfg: LoggerConfig): Logger {
     $.writeln("Unable to open log file " + e);
   }
 
-  function log(level: string, message: string) {
+  function shouldLog(level: LogLevel): boolean {
+    return level <= cfg.logLevel;
+  }
+
+  function log(level: LogLevel, message: Message) {
     try {
-      const timestamp = toYMD(new Date());
-      const logMessage =
-        "[" + timestamp + "][" + cfg.name + "][" + level + "] " + message;
-      if (cfg.alsoDebug) $.writeln(logMessage);
-      file?.writeln(logMessage);
+
+      if (shouldLog(level)) {
+        const timestamp = toYMD(new Date());
+
+        const textMessage = typeof message === 'function' ? message() : message;
+
+        const logMessage =
+          "[" + timestamp + "][" + cfg.name + "][" + level + "] " + textMessage;
+
+        file?.writeln(logMessage);
+        if (cfg.logLevel == LogLevel.DEBUG) $.writeln(logMessage);
+      }
     } catch (e) {
       $.writeln("Unable to log: " + e);
     }
@@ -63,14 +84,14 @@ const Logger = function (cfg: LoggerConfig): Logger {
 
   return {
     l: log,
-    i: function (message: string) {
-      log("INFO", message);
+    i: function (message: Message) {
+      log(LogLevel.INFO, message);
     },
-    w: function (message: string) {
-      log("WARN", message);
+    w: function (message: Message) {
+      log(LogLevel.WARN, message);
     },
-    e: function (message: string) {
-      log("ERROR", message);
+    e: function (message: Message) {
+      log(LogLevel.ERROR, message);
     },
     setFilePath: function (path: string) {
       logFilePath = path;
