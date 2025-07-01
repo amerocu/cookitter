@@ -1,3 +1,6 @@
+
+<img src="images/banner_21_9.jpg" alt="Cookitter banner logo" title="Cookiteer" />
+
 # Cookitter
 
 Cookitter from "cookie cutter" allows you to mirror elements from one artbook to another.
