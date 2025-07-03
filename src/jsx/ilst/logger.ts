@@ -6,6 +6,7 @@ type LoggerConfig = {
 
 type Logger = {
   l: (level: LogLevel, msg: Message) => void;
+  d: (msg: Message) => void;
   i: (msg: Message) => void;
   w: (msg: Message) => void;
   e: (msg: Message) => void;
@@ -27,6 +28,7 @@ function toYMD(d: Date) {
 
 const emptyLogger: Logger = {
   l: (level: LogLevel, msg: Message) => {},
+  d: (msg: Message) => {},
   i: (msg: Message) => {},
   w: (msg: Message) => {},
   e: (msg: Message) => {},
@@ -98,6 +100,9 @@ const Logger = function (cfg: LoggerConfig): Logger {
 
   return {
     l: log,
+    d: function (message: Message) {
+      log(LogLevel.DEBUG, message);
+    },
     i: function (message: Message) {
       log(LogLevel.INFO, message);
     },

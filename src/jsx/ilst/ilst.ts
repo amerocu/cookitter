@@ -128,7 +128,8 @@ function resetPageItems(obj: Layer | GroupItem, parent: Layer | GroupItem) {
         obj.pageItems[i].remove();
       } else {
         l.e(
-          `invalid element found, what should I do with origin: '${origin}'?`
+          () =>
+            `invalid element found, what should I do with origin: '${origin}'?`
         );
       }
     } else {
@@ -416,7 +417,7 @@ function doRenderMainGroupItem(
     return;
   }
 
-  l.i(seg(eg));
+  l.d(() => seg(eg));
 
   // At this poing we should have a valid GroupElement object.
 
@@ -444,7 +445,7 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
   const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameHash);
   l.i(() => `tag: ${tag?.name}`);
   const itemBlob = JSON.stringify(serializePathItem(sPi));
-  // l.i( ()=> `item: ${itemBlob}`);
+  l.i(() => `item: ${itemBlob}`);
   const newSignature: string = hashString(itemBlob);
   l.i(() => `new signature ${newSignature}`);
   if (tag) {
@@ -539,7 +540,7 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
     // @ts-ignore
     eg.destination = newDPi;
   } else {
-    l.i(() => `board not found, shape ${sPi.name} }`);
+    l.i(() => `board not found, shape ${sPi.name}`);
   }
 }
 
@@ -638,11 +639,12 @@ const updatePortal = (
         }
 
         l.i(
-          `making portal of ${pathItem.name} from artboard ${sArtboard.name} to ${cArtboard.name}`
+          () =>
+            `making portal of ${pathItem.name} from artboard ${sArtboard.name} to ${cArtboard.name}`
         );
         var placedItem: PlacedItem | null = placedItem;
         if (!placedItem) {
-          l.i("creating a new portal with id: " + id);
+          l.i(() => "creating a new portal with id: " + id);
           placedItem = groupItem.placedItems.add();
         }
         l.i(() => `updating portal file ${portalFilePath}`);
