@@ -9,10 +9,10 @@ import {
   isLeftFacingSide,
 } from "./artboard.utils";
 import { artboardRectangle, pathItemRectangle } from "./rectangle.ilst";
-import Logger from "./logger";
+import Logger, { LogLevel } from "./logger";
 export * from "./serialize";
 
-var l = Logger({ name: "main", alsoDebug: true, enable: true });
+var l = Logger({ name: "main", enable: false, logLevel: LogLevel.DEBUG });
 
 const mLayerName = "cookitter";
 
@@ -73,7 +73,7 @@ export const appReset = () => {
 // - PlacedItems
 // that have been generated, and removes tags to all user items.
 function resetPageItems(obj: Layer | GroupItem, parent: Layer | GroupItem) {
-  l.i(`resetting object: ${obj.name} ${obj.typename}`);
+  l.i(() => `resetting object: ${obj.name} ${obj.typename}`);
   for (let i = obj.pageItems.length - 1; i >= 0; i--) {
     const pageItem = obj.pageItems[i];
     const origin = getTagValue(pageItem, cookitterTagNameOrigin);
@@ -84,11 +84,12 @@ function resetPageItems(obj: Layer | GroupItem, parent: Layer | GroupItem) {
       // @ts-ignore
       const groupItem: GroupItem = pageItem;
       if (!origin) {
-        l.i(`group ${obj.name} is a user created group`);
+        l.i(() => `group ${obj.name} is a user created group`);
         resetPageItems(groupItem, groupItem);
       } else if (startsWithCookie(origin)) {
         l.i(
-          `group ${obj.name} is a cookitter group with ${obj.pageItems.length} pageItems`
+          () =>
+            `group ${obj.name} is a cookitter group with ${obj.pageItems.length} pageItems`
         );
         resetPageItems(groupItem, parent);
 
@@ -104,13 +105,16 @@ function resetPageItems(obj: Layer | GroupItem, parent: Layer | GroupItem) {
         }
         groupItem.remove();
       } else {
-        l.e(`invalid group found, what should I do with origin: '${origin}'?`);
+        l.e(
+          () =>
+            `invalid group found, what should I do with origin: '${origin}'?`
+        );
       }
     } else if (objType == "PathItem" || objType == "PlacedItem") {
-      l.i(`resetting object: ${pageItem.name} ${pageItem.typename}`);
+      l.i(() => `resetting object: ${pageItem.name} ${pageItem.typename}`);
       if (!origin) {
         // this is a user element, nothing to do.
-        l.i(`found user ${objType}`);
+        l.i(() => `found user ${objType}`);
 
         if (objType == "PathItem") {
           // we just checked that the element is a PathItem
@@ -120,7 +124,7 @@ function resetPageItems(obj: Layer | GroupItem, parent: Layer | GroupItem) {
         }
       } else if (startsWithCookie(origin)) {
         // this is cookietter element, just nuke it!!
-        l.i(`found cookitter ${objType}, deleting...`);
+        l.i(() => `found cookitter ${objType}, deleting...`);
         obj.pageItems[i].remove();
       } else {
         l.e(
@@ -128,7 +132,7 @@ function resetPageItems(obj: Layer | GroupItem, parent: Layer | GroupItem) {
         );
       }
     } else {
-      l.w(`unsupported item type: ${objType}`);
+      l.w(() => `unsupported item type: ${objType}`);
     }
   }
 }
@@ -165,7 +169,7 @@ export function appRender(settings: { doPortals: boolean }) {
   }
 
   const artBag = mkArtboardsBag(doc);
-  l.i(`artboards bag mapping: ` + JSON.stringify(artBag.artMapping));
+  l.i(() => `artboards bag mapping: ` + JSON.stringify(artBag.artMapping));
 
   const mPageItems = mLayer.pageItems;
 
@@ -209,7 +213,7 @@ function doRender(obj: any, artBag: ArtboardsBag, doPortals: boolean) {
           doRender(obj, artBag, doPortals);
           break;
         default:
-          l.e(`Sorry, unhandled origin: ${objType}`);
+          l.e(() => `Sorry, unhandled origin: ${objType}`);
       }
       break;
     case "PathItem":
@@ -227,7 +231,7 @@ function doRender(obj: any, artBag: ArtboardsBag, doPortals: boolean) {
           doRenderMainGroupItem(group, artBag, doPortals);
           break;
         default:
-          l.e(`Sorry, unhandled origin: ${objType}`);
+          l.e(() => `Sorry, unhandled origin: ${objType}`);
       }
       break;
     case "PlacedItem":
@@ -236,7 +240,7 @@ function doRender(obj: any, artBag: ArtboardsBag, doPortals: boolean) {
       obj.remove();
       break;
     default:
-      l.e(`Sorry, unhandled typename: ${objType}`);
+      l.e(() => `Sorry, unhandled typename: ${objType}`);
   }
 }
 
@@ -366,7 +370,7 @@ function doRenderMainGroupItem(
         const pi: PathItem = group.pathItems[0];
         const piOrigin = getTagValue(pi, cookitterTagNameOrigin);
 
-        l.i(`found piOrigin: ${piOrigin}`);
+        l.i(() => `found piOrigin: ${piOrigin}`);
         if (!piOrigin) {
           eg.sourceGroup = group;
           eg.source = pi;
@@ -381,7 +385,7 @@ function doRenderMainGroupItem(
         l.e("todo a");
         return 1;
       }
-      l.i(`found type: ${type}`);
+      l.i(() => `found type: ${type}`);
       if (type) {
         if (group.placedItems.length == 1) {
           const pi: PlacedItem = group.placedItems[0];
@@ -428,7 +432,7 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
   }
   const sPi = eg.source;
   const dPi = eg.destination;
-  l.i(`syncing: ${sPi.name}`);
+  l.i(() => `syncing: ${sPi.name}`);
 
   // sync canonic style
   sPi.strokeColor = rgbRed;
@@ -438,13 +442,13 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
 
   // getting source items signature
   const tag: Tag = getByNameSafe(sPi.tags, cookitterTagNameHash);
-  l.i(`tag: ${tag?.name}`);
+  l.i(() => `tag: ${tag?.name}`);
   const itemBlob = JSON.stringify(serializePathItem(sPi));
-  // l.i(`item: ${itemBlob}`);
+  // l.i( ()=> `item: ${itemBlob}`);
   const newSignature: string = hashString(itemBlob);
-  l.i(`new signature ${newSignature}`);
+  l.i(() => `new signature ${newSignature}`);
   if (tag) {
-    l.i(`old signature ${tag?.value}`);
+    l.i(() => `old signature ${tag?.value}`);
     if (tag?.value == newSignature && eg.destination) {
       // the item has not changed
       // so we can return
@@ -474,17 +478,17 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
   // create destination item
   const pathItemRect = pathItemRectangle(sPi);
   // the path item is missing
-  l.i(`searcing sha: ${sPi.name} ${pathItemRect} ${artBag.artRectangle}`);
+  l.i(() => `searcing sha: ${sPi.name} ${pathItemRect} ${artBag.artRectangle}`);
 
   const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
-  l.i(`found ${sArtboardIdx}`);
+  l.i(() => `found ${sArtboardIdx}`);
 
   if (sArtboardIdx !== null) {
     const sArtboard = artBag.artboards[sArtboardIdx];
 
     const lIF = matchArtboard(sArtboard.name);
     if (!lIF) {
-      l.i(`board name invalid  artboard: ${sArtboard.name} }`);
+      l.i(() => `board name invalid  artboard: ${sArtboard.name} }`);
       return;
     }
 
@@ -496,10 +500,10 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
     );
     const dArtboard = artBag.artboards[dArtboardIdx];
     if (!dArtboard) {
-      l.i(`board name without pair: ${sArtboard.name} }`);
+      l.i(() => `board name without pair: ${sArtboard.name} }`);
       return;
     }
-    l.i(`would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
+    l.i(() => `would duplicate ${sPi.name} in artboard:${dArtboard.name}`);
 
     if (!eg.destinationGroup) {
       const clipGroup = eg.mainGroup.groupItems.add();
@@ -535,7 +539,7 @@ function syncItems(artBag: ArtboardsBag, eg: ElementGroup) {
     // @ts-ignore
     eg.destination = newDPi;
   } else {
-    l.i(`board not found, shape ${sPi.name} }`);
+    l.i(() => `board not found, shape ${sPi.name} }`);
   }
 }
 
@@ -561,14 +565,14 @@ const updatePortal = (
   placedItem: PlacedItem | null,
   type: "source" | "destination"
 ) => {
-  l.i(`updatePortal: ${pathItem.name}`);
+  l.i(() => `updatePortal: ${pathItem.name}`);
   const pathItemRect = pathItemRectangle(pathItem);
   const sArtboardIdx = findIntersections(pathItemRect, artBag.artRectangle);
 
   if (sArtboardIdx !== null) {
     const sArtboard = artBag.artboards[sArtboardIdx];
 
-    l.i(`found in artboard: ${sArtboard.name}`);
+    l.i(() => `found in artboard: ${sArtboard.name}`);
     const lIF = matchArtboard(sArtboard.name);
     if (lIF) {
       var dArtboardInfo;
@@ -584,7 +588,7 @@ const updatePortal = (
         const [dGroup, dSide, dArtboardIdx] = dArtboardInfo;
         const cArtboard: Artboard = artBag.artboards[Number(dArtboardIdx)];
 
-        l.i(`capture artboard: ${cArtboard.name}`);
+        l.i(() => `capture artboard: ${cArtboard.name}`);
         const id: string = getTagId(pathItem);
 
         const side = lIF.side;
@@ -599,7 +603,7 @@ const updatePortal = (
         }
 
         const portalFilePath = `${portalsFolder}/${id}-${side}.png`;
-        l.i(`crating portal file ${portalFilePath}`);
+        l.i(() => `crating portal file ${portalFilePath}`);
         const tempFile = new File(portalFilePath);
 
         // Capture the selected portion as an image
@@ -629,7 +633,7 @@ const updatePortal = (
         doc.imageCapture(tempFile, targetRect, options);
 
         if (!tempFile.exists) {
-          l.e(`Failed to capture image for item: ${id}`);
+          l.e(() => `Failed to capture image for item: ${id}`);
           return;
         }
 
@@ -641,7 +645,7 @@ const updatePortal = (
           l.i("creating a new portal with id: " + id);
           placedItem = groupItem.placedItems.add();
         }
-        l.i(`updating portal file ${portalFilePath}`);
+        l.i(() => `updating portal file ${portalFilePath}`);
         // Updatdint the file propery resets the whole PalcedItem
         // so we must set all the properties again.
         placedItem.file = tempFile;
@@ -690,7 +694,7 @@ const updatePortal = (
         pathItem.filled = true;
       }
     } else {
-      l.i(`invalid artboard name: ${sArtboard.name} }`);
+      l.i(() => `invalid artboard name: ${sArtboard.name} }`);
     }
   }
 };
@@ -720,9 +724,9 @@ function mkArtboardsBag(doc: Document): ArtboardsBag {
         i.toString(),
         artMapping
       );
-      l.i(`added artboard:${artboard.name}`);
+      l.i(() => `added artboard:${artboard.name}`);
     } else {
-      l.i(`ignoring artboard:${artboard.name}`);
+      l.i(() => `ignoring artboard:${artboard.name}`);
     }
   }
 
