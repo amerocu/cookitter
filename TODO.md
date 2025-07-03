@@ -10,6 +10,8 @@
 
 ## Useful
 
+- feat: settings page
+- feat: persistent settings options
 - feat: render portals in inverted order on odd pages, this will allow to see through multiple pages with only one render.
 - feat: warning if artboard names are not consistent, like missing pages or missing sides.
 - feat: display error on locked layer
