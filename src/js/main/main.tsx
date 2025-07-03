@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { openLinkInBrowser, evalTS } from "../lib/utils/bolt";
+import { version } from "../../../package.json";
 
 import "../style.css";
 
@@ -161,7 +162,7 @@ const Main = () => {
 
       {/* Footer Row */}
       <div className="bottom-row">
-        <span>v1.0.0</span>
+        <span>v{version}</span>
         <a onClick={serialize} className="help">
           serialize
         </a>

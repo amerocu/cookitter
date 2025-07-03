@@ -2,6 +2,8 @@
 
 ## Unrelased
 
+## 0.2.0
+
 - chore: add short manual to the plugin
 - fix: preserve strok while generating portals
 - fix: reset restore PathItems filled property

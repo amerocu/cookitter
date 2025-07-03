@@ -4,11 +4,10 @@
 
 ## Needed
 
-- feat: nice logo
-- feat: short demonstration video
-
 ## Useful
 
+- feat: nice logo
+- feat: short demonstration video
 - feat: settings page
 - feat: persistent settings options
 - feat: render portals in inverted order on odd pages, this will allow to see through multiple pages with only one render.
