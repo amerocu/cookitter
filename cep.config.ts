@@ -28,8 +28,8 @@ const config: CEP_Config = {
       name: "main",
       panelDisplayName: "Cookitter",
       autoVisible: true,
-      width: 600,
-      height: 650,
+      minWidth: 370,
+      minHeight: 300,
     },
   ],
   build: {

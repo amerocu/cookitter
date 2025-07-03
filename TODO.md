@@ -6,7 +6,6 @@
 
 - feat: nice logo
 - feat: short demonstration video
-- fix: window size
 
 ## Useful
 
