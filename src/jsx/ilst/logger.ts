@@ -46,17 +46,28 @@ const Logger = function (cfg: LoggerConfig): Logger {
 
   const timestamp = toYMD(new Date());
   var logFilePath = `${logFolderPath}/${timestamp}_${cfg.name}.txt`;
+  var lastFlushTime = new Date().getTime();
+  var flushInterval = 10000; // 10 seconds
 
   $.writeln("Opening log at: " + logFilePath);
   var file: File | null = null;
-  try {
-    file = new File(logFilePath);
-    file.open("a"); // Append mode
 
-    $.writeln("Opened!");
-  } catch (e) {
-    $.writeln("Unable to open log file " + e);
+  function flush() {
+    try {
+      if (file) {
+        file.close();
+        $.writeln("Closing log file...");
+      }
+      file = new File(logFilePath);
+      file.open("a"); // Append mode
+      lastFlushTime = new Date().getTime();
+      $.writeln("Opened!");
+    } catch (e) {
+      $.writeln("Unable to open log file " + e);
+    }
   }
+
+  flush();
 
   function shouldLog(level: LogLevel): boolean {
     return level <= cfg.logLevel;
@@ -74,6 +85,11 @@ const Logger = function (cfg: LoggerConfig): Logger {
 
         file?.writeln(logMessage);
         if (cfg.logLevel == LogLevel.DEBUG) $.writeln(logMessage);
+
+        const now = new Date().getTime();
+        if (now - lastFlushTime >= flushInterval) {
+          flush();
+        }
       }
     } catch (e) {
       $.writeln("Unable to log: " + e);
