@@ -1,7 +1,7 @@
 import { mapp } from "./utils";
-import Logger from "./logger";
+import Logger, { LogLevel } from "./logger";
 
-var l = Logger({ name: "serialize", alsoDebug: true, enable: true });
+var l = Logger({ name: "serialize", enable: false, logLevel: LogLevel.DEBUG });
 
 export const serializeApp = () => {
   const doc = app.activeDocument;

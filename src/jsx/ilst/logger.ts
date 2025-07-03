@@ -14,13 +14,12 @@ type Logger = {
 
 type Message = string | (() => string);
 
-enum LogLevel {
+export enum LogLevel {
   ERROR = 0,
-  WARN = 1, 
+  WARN = 1,
   INFO = 2,
-  DEBUG = 3
-};
-
+  DEBUG = 3,
+}
 
 function toYMD(d: Date) {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}`;
@@ -46,7 +45,7 @@ const Logger = function (cfg: LoggerConfig): Logger {
   }
 
   const timestamp = toYMD(new Date());
-  const logFilePath = `${logFolderPath}/${timestamp}_${cfg.name}.txt`;
+  var logFilePath = `${logFolderPath}/${timestamp}_${cfg.name}.txt`;
 
   $.writeln("Opening log at: " + logFilePath);
   var file: File | null = null;
@@ -65,11 +64,10 @@ const Logger = function (cfg: LoggerConfig): Logger {
 
   function log(level: LogLevel, message: Message) {
     try {
-
       if (shouldLog(level)) {
         const timestamp = toYMD(new Date());
 
-        const textMessage = typeof message === 'function' ? message() : message;
+        const textMessage = typeof message === "function" ? message() : message;
 
         const logMessage =
           "[" + timestamp + "][" + cfg.name + "][" + level + "] " + textMessage;
