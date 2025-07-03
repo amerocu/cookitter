@@ -57,13 +57,18 @@ const Main = () => {
     });
   };
 
-  const infoMessages: [Message] = [
+  const infoMessages: Message[] = [
     ...(duration
-      ? [{ type: "info", text: `Sync took ${prettyDuration(duration)}` }]
+      ? [
+          {
+            type: "info",
+            text: `Sync took ${prettyDuration(duration)}`,
+          } as Message,
+        ]
       : []),
   ];
 
-  const errorMessages: [Message] = [];
+  const errorMessages: Message[] = [];
 
   const messages = [...infoMessages, ...errorMessages];
 
