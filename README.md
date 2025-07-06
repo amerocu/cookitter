@@ -7,7 +7,7 @@ Cookitter a cookie cutter tool for building books with holes.
 
 The name is the contraction of "cookie" and "cutter", it allows you to mirror elements between two artbooks as if a hole on two sides of the same page.
 
-The use case is to aid the design of books with holes, holes needs to be mirrored from one side to the other side of the same page.
+The use case is to aid the design of books with holes. Holes needs to be mirrored from one side to the other side of the same page. S
 
 ## Instructions
 
@@ -35,6 +35,8 @@ To allow Cookitter to work in your project some preparation is needed:
 2. Dowload the latest release of Cookitter from the [relase page](https://github.com/amerocu/cookitter/releases).
 
 3. Install Cookitter with ZXP Installer
+
+4. Restart your Adobe application, and you’ll find the plugin under the `Window > Extensions` menu.
 
 ## Credits
  
