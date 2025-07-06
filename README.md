@@ -27,3 +27,10 @@ To allow Cookitter to work in your project some preparation is needed:
 3. Run <b>Sync</b> to make the magic happen, and enable <b>Portals</b> to see through your cuts.
 
 4. Use <b>Reset</b> to start fresh of all cookitter work.
+
+## Credits
+ 
+<a href="https://hyperbrew.co/resources/bolt-cep">
+<img src="images/Built_With_BOLT_CEP_Logo_White_V01.png"
+ alt="Built with BOLT logo" title="Built With Bolt" width="200" />
+</a>
