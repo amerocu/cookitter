@@ -28,6 +28,14 @@ To allow Cookitter to work in your project some preparation is needed:
 
 4. Use <b>Reset</b> to start fresh of all cookitter work.
 
+## Intallation
+
+1. Install [ZXP Installer](https://aescripts.com/learn/zxp-installer/).
+
+2. Dowload the latest release of Cookitter from the [relase page](https://github.com/amerocu/cookitter/releases).
+
+3. Install Cookitter with ZXP Installer
+
 ## Credits
  
 <a href="https://hyperbrew.co/resources/bolt-cep">
