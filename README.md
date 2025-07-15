@@ -28,6 +28,8 @@ To allow Cookitter to work in your project some preparation is needed:
 
 4. Use <b>Reset</b> to start fresh of all cookitter work.
 
+There is also a more in depth [manual](doc/manual.md).
+
 ## Intallation
 
 1. Install [ZXP Installer](https://aescripts.com/learn/zxp-installer/).
