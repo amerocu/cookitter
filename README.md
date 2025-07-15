@@ -41,6 +41,6 @@ To allow Cookitter to work in your project some preparation is needed:
 ## Credits
  
 <a href="https://hyperbrew.co/resources/bolt-cep">
-<img src="images/Built_With_BOLT_CEP_Logo_White_V01.png"
+<img src="images/Built_With_BOLT_CEP_Logo_Grey_V01.png"
  alt="Built with BOLT logo" title="Built With Bolt" width="200" />
 </a>
